@@ -1,0 +1,55 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { TrialStatus } from "@/components/dashboard/trial-status";
+import { AnalysisWorkspace } from "@/components/analysis/analysis-workspace";
+
+type AccountPayload = {
+  authenticated: boolean;
+  user: { id: string; name: string; email: string; image?: string | null };
+  entitlements: {
+    isAdmin: boolean; isUnrestricted: boolean; consultantEntitled: boolean;
+    granted: number; used: number; remaining: number | null; expired: boolean;
+    unlimited: boolean; workspaceLocked: boolean; expiresAt: string;
+  };
+};
+
+export function DashboardShell() {
+  const router = useRouter();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const accountQuery = useQuery({
+    queryKey: ["account"],
+    queryFn: async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      if (!response.ok) throw new Error("Unable to load your account.");
+      return response.json() as Promise<AccountPayload>;
+    }
+  });
+  async function signOut() {
+    await authClient.signOut();
+    router.replace("/");
+    router.refresh();
+  }
+
+  if (accountQuery.isLoading) return <main className="dashboard-loading"><div className="spinner" /><p>Loading your workspace…</p></main>;
+  if (accountQuery.isError || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
+  const { user, entitlements } = accountQuery.data;
+
+  return (
+    <main className="dashboard-page">
+      <header className="dashboard-header"><Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Intelligent career positioning</small></span></Link><div className="header-actions"><span className="user-chip">{user.name || user.email}</span><Link href="/dashboard/settings" className="header-link">Account settings</Link><button className="button-quiet" onClick={signOut}>Sign out</button></div></header>
+      <div className="dashboard-main">
+        <section className="dashboard-welcome"><div><p className="eyebrow">PERSONAL DASHBOARD</p><h1>Welcome{user.name ? `, ${user.name.split(" ")[0]}` : " back"}.</h1><p className="muted">Your CV strategy workspace and account overview.</p></div><div className="dashboard-date">CV STRATEGIST AI <span>YOUR CAREER, BETTER POSITIONED</span></div></section>
+        <TrialStatus entitlements={entitlements} onUpgrade={() => setShowUpgrade(true)} />
+        <div className="dashboard-summary-grid"><article className="summary-tile"><span>ANALYSES USED</span><strong>{entitlements.unlimited ? "∞" : `${entitlements.used} / ${entitlements.granted}`}</strong><small>{entitlements.unlimited ? "Unrestricted account" : "Free launch offer"}</small></article><article className="summary-tile"><span>ANALYSES REMAINING</span><strong>{entitlements.unlimited ? "∞" : entitlements.expired ? "0" : entitlements.remaining}</strong><small>{entitlements.unlimited ? "No trial restriction" : "Until 31 Dec 2026"}</small></article><article className="summary-tile"><span>CONSULTANT MODE</span><strong>{"Locked"}</strong><small>Paid feature — integration pending</small></article></div>
+        <AnalysisWorkspace entitlements={entitlements} onUpgrade={() => setShowUpgrade(true)} />
+        {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Payment checkout is not connected yet. Your account and trial status are safely stored. We will activate subscriptions after the payment provider is selected and merchant onboarding is complete.</p><button className="button-primary full-width" type="button" onClick={() => setShowUpgrade(false)}>Got it</button></section></div>}
+        <footer className="dashboard-footer"><span>CV Strategist AI</span><span>Evidence-based. ATS-friendly. Candidate-controlled.</span></footer>
+      </div>
+    </main>
+  );
+}
