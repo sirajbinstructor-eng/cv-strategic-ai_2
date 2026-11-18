@@ -1,0 +1,325 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b32">
+
+  <meta name="description" content="Evidence-based CV analysis and ATS-friendly CV tailoring." />
+  <title>CV Strategist AI</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/styles.css?v=20261118-fix2">
+  <script src="/app.js?v=20261118-fix2" defer></script>
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="CV Strategist AI home">
+      <span class="brand-mark">CV</span>
+      <span class="brand-copy">
+        <strong>CV Strategist</strong>
+        <small>Intelligent career positioning</small>
+      </span>
+    </a>
+
+    <div class="topbar-right">
+      <span class="workspace-label">Private workspace</span>
+      <button id="logoutBtn" class="button-ghost" type="button" hidden>
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+
+    <!-- LOGIN -->
+    <section id="loginPanel" class="login-panel">
+      <div class="login-card">
+        <p class="eyebrow">SECURE ACCESS</p>
+        <h1>Welcome back.</h1>
+        <p class="muted">
+          Enter your workspace password to continue.
+        </p>
+
+        <form id="loginForm">
+          <label for="password">Access password</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            required
+          >
+
+          <button class="button-primary button-full" type="submit">
+            Access workspace
+            <span aria-hidden="true">→</span>
+          </button>
+
+          <p id="loginError" class="error-message" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- APPLICATION -->
+    <section id="appPanel" hidden>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">CAREER POSITIONING WORKSPACE</p>
+
+          <h1>A CV that tells the right professional story.</h1>
+
+          <p class="hero-description">
+            Analyze your experience against a target opportunity,
+            identify the evidence that matters, and build a more
+            relevant CV without inventing facts.
+          </p>
+
+          <div class="hero-points">
+            <span>01 Analyze</span>
+            <span>02 Refine</span>
+            <span>03 Generate</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- INPUTS -->
+      <section class="workspace-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">START HERE</p>
+            <h2>Build your targeted CV</h2>
+          </div>
+          <span class="step-label">INPUTS · 01</span>
+        </div>
+
+        <form id="analysisForm" class="input-card">
+
+          <label for="cvFile">Your current CV</label>
+
+          <div id="uploadZone" class="upload-zone">
+            <div class="upload-icon">↑</div>
+            <strong>Choose your CV or drop it here</strong>
+            <p>DOCX or text-based PDF · Max 12 MB</p>
+            <input
+              id="cvFile"
+              name="cv"
+              type="file"
+              accept=".docx,.pdf"
+              required
+            >
+            <p id="fileName" class="file-name">No file selected</p>
+          </div>
+
+          <label for="jobDescription">Target job description</label>
+          <p class="field-hint">
+            Use the full job description for a more meaningful assessment.
+            80–30,000 characters.
+          </p>
+
+          <textarea
+            id="jobDescription"
+            name="jobDescription"
+            rows="10"
+            placeholder="Paste the complete job description here..."
+            required
+          ></textarea>
+
+          <div class="mode-heading">
+            <label>Choose your working mode</label>
+          </div>
+
+          <div class="mode-grid">
+            <label class="mode-card">
+              <input
+                type="radio"
+                name="mode"
+                value="automatic"
+                checked
+              >
+              <span class="mode-card-content">
+                <strong>Automatic analysis</strong>
+                <small>
+                  Get your assessment and targeted CV workflow immediately.
+                </small>
+              </span>
+            </label>
+
+            <label class="mode-card">
+              <input
+                type="radio"
+                name="mode"
+                value="consultant"
+              >
+              <span class="mode-card-content">
+                <strong>Consultant mode</strong>
+                <small>
+                  Answer focused questions to clarify evidence and improve
+                  your profile.
+                </small>
+              </span>
+            </label>
+          </div>
+
+          <button
+            id="analyzeBtn"
+            class="button-primary analyze-button"
+            type="submit"
+          >
+            Analyze my CV
+            <span aria-hidden="true">→</span>
+          </button>
+
+          <p class="privacy-note">
+            Your uploaded file is processed in memory and is not saved
+            as a permanent upload.
+          </p>
+        </form>
+      </section>
+
+      <!-- RESULTS -->
+      <section id="resultsPanel" class="workspace-section" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ASSESSMENT RESULTS</p>
+            <h2>Your CV analysis</h2>
+            <p class="muted">
+              Review the evidence and recommendations before generating
+              your document.
+            </p>
+          </div>
+        </div>
+
+        <p id="cacheMessage" class="cache-message" hidden></p>
+
+        <div id="loadingState" class="loading-panel" hidden>
+          <div class="spinner"></div>
+          <strong>Analyzing your profile...</strong>
+          <p>Extracting evidence and comparing role requirements.</p>
+        </div>
+
+        <div id="emptyState" class="empty-panel" hidden>
+          <h3>Your analysis will appear here.</h3>
+          <p>Upload a CV and paste the target job description to begin.</p>
+        </div>
+
+        <div id="analysisContent" class="analysis-content"></div>
+      </section>
+
+      <!-- CONSULTANT -->
+      <section id="consultantPanel" class="workspace-section" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">INTERACTIVE REFINEMENT</p>
+            <h2>Let's clarify your experience</h2>
+            <p class="muted">
+              Answer the strategic questions below. Only information
+              you explicitly confirm will be added to the assessment.
+            </p>
+          </div>
+        </div>
+
+        <div class="consultant-card">
+          <section class="advice-block">
+            <h3>Questions to clarify</h3>
+            <div id="questionList"></div>
+          </section>
+
+          <div id="consultantAdvice"></div>
+
+          <label for="consultantAnswers">
+            Your answers and additional evidence
+          </label>
+
+          <textarea
+            id="consultantAnswers"
+            rows="6"
+            placeholder="Answer the questions and provide any additional confirmed information..."
+          ></textarea>
+
+          <button id="refineBtn" class="button-secondary" type="button">
+            Update assessment with my answers →
+          </button>
+        </div>
+      </section>
+
+      <!-- GENERATE -->
+      <section id="generatePanel" class="workspace-section" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">FINAL DOCUMENT</p>
+            <h2>Generate your targeted CV</h2>
+            <p class="muted">
+              Contact details are extracted from your source CV when
+              available. You can override them below.
+            </p>
+          </div>
+        </div>
+
+        <div class="generate-card">
+          <div class="generate-grid">
+            <div>
+              <label for="candidateName">
+                Candidate name
+                <span class="optional-label">Optional override</span>
+              </label>
+
+              <input
+                id="candidateName"
+                type="text"
+                placeholder="Leave blank to use the source CV"
+              >
+
+              <label for="contact">
+                Contact details
+                <span class="optional-label">Optional override</span>
+              </label>
+
+              <input
+                id="contact"
+                type="text"
+                placeholder="Email · Phone · LinkedIn"
+              >
+            </div>
+
+            <div>
+              <label for="confirmedFacts">
+                Additional confirmed facts
+                <span class="optional-label">Optional</span>
+              </label>
+
+              <textarea
+                id="confirmedFacts"
+                rows="6"
+                placeholder="Add only verified corrections or additional information..."
+              ></textarea>
+            </div>
+          </div>
+
+          <button id="generateBtn" class="button-primary" type="button">
+            Generate targeted CV
+            <span aria-hidden="true">↓</span>
+          </button>
+
+          <p id="generateStatus" class="status-message"></p>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <footer class="footer">
+    <strong>CV Strategist AI</strong>
+    <span>Evidence-based career positioning</span>
+    <small>Assessment scores are estimates, not hiring probabilities.</small>
+  </footer>
+</body>
+</html>

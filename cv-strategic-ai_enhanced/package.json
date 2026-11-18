@@ -1,0 +1,49 @@
+{
+  "name": "cv-strategist-ai",
+  "version": "0.2.2",
+  "private": true,
+  "description": "Evidence-based, ATS-friendly CV analysis and tailoring platform.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "test": "tsx --test tests/scoring.test.ts"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.25",
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.90.0",
+    "better-auth": "1.7.25",
+    "docx": "^9.5.1",
+    "drizzle-orm": "0.45.4",
+    "mammoth": "^1.9.0",
+    "next": "^16.0.0",
+    "pdf-parse": "1.1.1",
+    "pg": "^8.16.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.62.0",
+    "zod": "^4.1.5",
+    "dotenv": "^16.6.1",
+    "pdfkit": "^0.17.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "drizzle-kit": "0.31.4",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^16.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "@types/pdfkit": "^0.17.3"
+  }
+}
