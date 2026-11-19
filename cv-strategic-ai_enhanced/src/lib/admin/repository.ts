@@ -1,10 +1,48 @@
-import {randomUUID} from "node:crypto";import {pool} from "@/lib/db";import type {CreateInput,UpdateInput} from "./model";
+import {randomUUID} from "node:crypto";
+import {pool} from "@/lib/db";
+import type {CreateInput,UpdateInput} from "./model";
 const cols="id,name,email,email_verified,created_at,updated_at,is_admin,is_unrestricted,consultant_entitled,analysis_trials_granted,analysis_trials_used,analysis_trials_reserved,analysis_trial_expires_at";
-export class AdminUserRepository{
- async list(x:{q?:string;role:string;limit:number;offset:number}){const vals:unknown[]=[];const wh:string[]=[];if(x.q){vals.push("%"+x.q+"%");wh.push("(name ILIKE $1 OR email ILIKE $1)");}if(x.role==="admin")wh.push("is_admin=true");if(x.role==="user")wh.push("is_admin=false");const w=wh.length?"WHERE "+wh.join(" AND "):"";const c=await pool.query('SELECT COUNT(*)::int AS total FROM "user" '+w,vals);const r=await pool.query('SELECT '+cols+' FROM "user" '+w+' ORDER BY created_at DESC LIMIT $'+(vals.length+1)+' OFFSET $'+(vals.length+2),[...vals,x.limit,x.offset]);return {users:r.rows,total:Number(c.rows[0]?.total||0)};}
+export class AdminUserRepository {
+ async list(x:{q?:string;role:string;limit:number;offset:number}) {
+  const vals:unknown[]=[];const where:string[]=[];
+  if(x.q){vals.push("%"+x.q+"%");where.push("(name ILIKE $1 OR email ILIKE $1)");}
+  if(x.role==="admin")where.push("is_admin=true");if(x.role==="user")where.push("is_admin=false");
+  const clause=where.length?"WHERE "+where.join(" AND "):"";
+  const count=await pool.query('SELECT COUNT(*)::int AS total FROM "user" '+clause,vals);
+  const rows=await pool.query('SELECT '+cols+' FROM "user" '+clause+' ORDER BY created_at DESC LIMIT $'+(vals.length+1)+' OFFSET $'+(vals.length+2),[...vals,x.limit,x.offset]);
+  return {users:rows.rows,total:Number(count.rows[0]?.total||0)};
+ }
  async get(id:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE id=$1',[id]);return r.rows[0]||null;}
  async byEmail(email:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE lower(email)=lower($1)',[email]);return r.rows[0]||null;}
  async create(x:CreateInput){const r=await pool.query('INSERT INTO "user"(id,name,email,email_verified,is_admin,is_unrestricted,consultant_entitled,analysis_trials_granted) VALUES($1,$2,$3,false,$4,$5,$6,$7) RETURNING '+cols,[randomUUID(),x.name,x.email,x.isAdmin,x.isUnrestricted,x.consultantEntitled,x.analysisTrialsGranted]);return r.rows[0];}
- async update(id:string,x:UpdateInput){const m:Record<string,string>={name:"name",email:"email",emailVerified:"email_verified",isAdmin:"is_admin",isUnrestricted:"is_unrestricted",consultantEntitled:"consultant_entitled",analysisTrialsGranted:"analysis_trials_granted"};const e=Object.entries(x).filter(([k])=>m[k]);const vals:unknown[]=[];const sets=e.map(([k,v])=>{vals.push(v);return '"'+m[k]+'"=$'+vals.length;});vals.push(id);const r=await pool.query('UPDATE "user" SET '+sets.join(",")+',updated_at=NOW() WHERE id=$'+vals.length+' RETURNING '+cols,vals);return r.rows[0]||null;}
- async remove(id:string,actor:string){const c=await pool.connect();try{await c.query("BEGIN");const t=await c.query('SELECT email,is_admin FROM "user" WHERE id=$1 FOR UPDATE',[id]);if(!t.rowCount){await c.query("ROLLBACK");return "NOT_FOUND";}if(id===actor){await c.query("ROLLBACK");return "SELF_DELETE";}if(["siraj.b.instructor@gmail.com","cvstrategistai@gmail.com"].includes(String(t.rows[0].email).toLowerCase())){await c.query("ROLLBACK");return "PROTECTED";}if(t.rows[0].is_admin){const n=await c.query('SELECT COUNT(*)::int n FROM "user" WHERE is_admin=true');if(n.rows[0].n<=1){await c.query("ROLLBACK");return "LAST_ADMIN";}}await c.query('DELETE FROM "user" WHERE id=$1',[id]);await c.query("COMMIT");return "DELETED";}catch(e){await c.query("ROLLBACK").catch(()=>{});throw e;}finally{c.release();}}
+ async update(id:string,x:UpdateInput){
+  const map:Record<string,string>={name:"name",email:"email",emailVerified:"email_verified",isAdmin:"is_admin",isUnrestricted:"is_unrestricted",consultantEntitled:"consultant_entitled",analysisTrialsGranted:"analysis_trials_granted"};
+  const entries=Object.entries(x).filter(([key])=>map[key]);if(!entries.length)return this.get(id);
+  const client=await pool.connect();
+  try{
+   await client.query("BEGIN");
+   if(x.isAdmin===false){
+    await client.query('LOCK TABLE "user" IN SHARE ROW EXCLUSIVE MODE');
+    const current=await client.query('SELECT is_admin FROM "user" WHERE id=$1 FOR UPDATE',[id]);
+    if(!current.rowCount){await client.query("ROLLBACK");return null;}
+    if(current.rows[0].is_admin){const admins=await client.query('SELECT COUNT(*)::int AS total FROM "user" WHERE is_admin=true');if(admins.rows[0].total<=1){await client.query("ROLLBACK");throw Object.assign(Error("Cannot demote the last administrator."),{status:409});}}
+   }
+   const vals:unknown[]=[];const sets=entries.map(([key,value])=>{vals.push(value);return '"'+map[key]+'"=$'+vals.length;});vals.push(id);
+   const result=await client.query('UPDATE "user" SET '+sets.join(",")+',updated_at=NOW() WHERE id=$'+vals.length+' RETURNING '+cols,vals);
+   await client.query("COMMIT");return result.rows[0]||null;
+  }catch(error){await client.query("ROLLBACK").catch(()=>{});throw error;}finally{client.release();}
+ }
+ async remove(id:string,actor:string){
+  const client=await pool.connect();
+  try{
+   await client.query("BEGIN");
+   await client.query('LOCK TABLE "user" IN SHARE ROW EXCLUSIVE MODE');
+   const target=await client.query('SELECT email,is_admin FROM "user" WHERE id=$1 FOR UPDATE',[id]);
+   if(!target.rowCount){await client.query("ROLLBACK");return "NOT_FOUND";}
+   if(id===actor){await client.query("ROLLBACK");return "SELF_DELETE";}
+   if(["siraj.b.instructor@gmail.com","cvstrategistai@gmail.com"].includes(String(target.rows[0].email).toLowerCase())){await client.query("ROLLBACK");return "PROTECTED";}
+   if(target.rows[0].is_admin){const admins=await client.query('SELECT COUNT(*)::int AS total FROM "user" WHERE is_admin=true');if(admins.rows[0].total<=1){await client.query("ROLLBACK");return "LAST_ADMIN";}}
+   await client.query('DELETE FROM "user" WHERE id=$1',[id]);await client.query("COMMIT");return "DELETED";
+  }catch(error){await client.query("ROLLBACK").catch(()=>{});throw error;}finally{client.release();}
+ }
 }
