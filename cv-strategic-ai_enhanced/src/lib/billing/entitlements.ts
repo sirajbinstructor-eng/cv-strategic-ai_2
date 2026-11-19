@@ -15,7 +15,7 @@ async function getPeriod(client:PoolClient | typeof pool,userId:string,sub:any){
  const row=await client.query("SELECT * FROM billing_usage_periods WHERE user_id=$1 AND period_start=$2 FOR UPDATE",[userId,start]);
  return row.rows[0];
 }
-export async function reserveSubscriptionAnalysis(userId:string):Promise<BillingReservation|null>{
+export async function reserveSubscriptionAnalysis(userId:string,mode:"automatic"|"consultant"="automatic"):Promise<BillingReservation|null>{
  const client=await pool.connect();try{await client.query("BEGIN");
   const user=await client.query('SELECT is_admin,is_unrestricted FROM "user" WHERE id=$1 FOR UPDATE',[userId]);
   if(!user.rowCount)throw Error("Account not found.");
@@ -29,7 +29,7 @@ export async function reserveSubscriptionAnalysis(userId:string):Promise<Billing
    WHERE id=$1 AND analyses_used+analyses_reserved<analyses_limit RETURNING id`,[period.id]);
   if(!update.rowCount)throw Object.assign(Error("You have reached your analysis quota for this billing period. Upgrade your plan or wait for the next period."),{status:402,code:"ANALYSIS_QUOTA_EXHAUSTED"});
   const id=randomUUID();await client.query("INSERT INTO entitlement_reservations(id,user_id,feature,source,usage_period_start,status) VALUES($1,$2,'analysis','subscription',$3,'reserved')",[id,userId,period.period_start]);
-  await client.query("INSERT INTO analysis_usage(id,user_id,status,mode) VALUES($1,$2,'reserved','automatic')",[id,userId]);
+  await client.query("INSERT INTO analysis_usage(id,user_id,status,mode) VALUES($1,$2,'reserved',$3)",[id,userId,mode]);
   await client.query("COMMIT");return {id,source:"subscription",periodStart:new Date(period.period_start).toISOString(),feature:"analysis"};
  }catch(e){await client.query("ROLLBACK").catch(()=>{});throw e;}finally{client.release();}
 }
