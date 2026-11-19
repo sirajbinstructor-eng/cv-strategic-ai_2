@@ -1,6 +1,5 @@
 import { calculateDiscount, type ApplyDiscountInput, type ReviewDiscountInput } from "./model";
 import { DiscountRepository } from "./repository";
-import { areDiscountDocumentsVerifiable } from "@/lib/verification/document-upload-gate";
 
 const repository = new DiscountRepository();
 
@@ -17,10 +16,6 @@ export class DiscountService {
   }
 
   async review(id: string, reviewerId: string, input: ReviewDiscountInput) {
-    if(input.decision==="approved") {
-      const application=await repository.getById(id);
-      if(application&&application.category!=="early_career"&&!areDiscountDocumentsVerifiable()) throw Object.assign(new Error("Student and recent-graduate discount approval is blocked until secure document uploads and manual evidence review are enabled."),{status:409});
-    }
     return repository.review(id, reviewerId, input);
   }
 }
