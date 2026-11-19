@@ -70,11 +70,13 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
   const reservationId = randomUUID();
   try {
     await client.query("BEGIN");
-    // Release abandoned reservations left by a crashed request (20-minute safety window).
+    // Release abandoned paid reservations and restore their billing-period counters.
+    await client.query("WITH stale AS (UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE status='reserved' AND source='subscription' AND created_at<NOW()-INTERVAL '20 minutes' RETURNING user_id,feature,usage_period_start) UPDATE billing_usage_periods b SET analyses_reserved=CASE WHEN stale.feature='analysis' THEN GREATEST(0,b.analyses_reserved-1) ELSE b.analyses_reserved END,generations_reserved=CASE WHEN stale.feature='cv_generation' THEN GREATEST(0,b.generations_reserved-1) ELSE b.generations_reserved END,updated_at=NOW() FROM stale WHERE b.user_id=stale.user_id AND b.period_start=stale.usage_period_start");
+    // Release abandoned free-trial reservations left by a crashed request.
     await client.query(
       `WITH stale AS (
          UPDATE analysis_usage SET status = 'released', failure_code = 'RESERVATION_TIMEOUT'
-          WHERE status = 'reserved' AND created_at < NOW() - INTERVAL '20 minutes'
+          WHERE status = 'reserved' AND created_at < NOW() - INTERVAL '20 minutes' AND NOT EXISTS (SELECT 1 FROM entitlement_reservations er WHERE er.id=analysis_usage.id AND er.source='subscription')
           RETURNING user_id
        ), grouped AS (
          SELECT user_id, COUNT(*)::integer AS released_count FROM stale GROUP BY user_id
