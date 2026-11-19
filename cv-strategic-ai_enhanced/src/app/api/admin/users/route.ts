@@ -1,0 +1,9 @@
+import {NextRequest,NextResponse} from "next/server";
+import {requireAdmin,apiError} from "@/lib/admin/controller";
+import {listSchema,inviteSchema} from "@/lib/admin/model";
+import {AdminUserRepository} from "@/lib/admin/repository";
+import {auth} from "@/lib/auth";
+export const runtime="nodejs";export const dynamic="force-dynamic";
+const repoUsers=new AdminUserRepository();
+export async function GET(request:NextRequest){const access=await requireAdmin();if(access.error)return access.error;try{const parsed=listSchema.safeParse(Object.fromEntries(request.nextUrl.searchParams));if(!parsed.success)return NextResponse.json({error:"Invalid query",details:parsed.error.flatten()},{status:400});const result=await repoUsers.list(parsed.data);return NextResponse.json(result,{headers:{"Cache-Control":"no-store"}});}catch(error){return apiError(error);}}
+export async function POST(request:NextRequest){const access=await requireAdmin();if(access.error)return access.error;try{const parsed=inviteSchema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:"Invalid invitation",details:parsed.error.flatten()},{status:400});const {name,email}=parsed.data;if(await repoUsers.byEmail(email))return NextResponse.json({error:"An account with this email already exists."},{status:409});await auth.api.sendVerificationOTP({body:{email,type:"sign-in"}});const base=process.env.BETTER_AUTH_URL||request.nextUrl.origin;const inviteUrl=new URL("/invite",base);inviteUrl.searchParams.set("email",email);inviteUrl.searchParams.set("name",name);return NextResponse.json({invitation:{email,name,expiresInSeconds:300,inviteUrl:inviteUrl.toString()},message:"A one-time sign-in code was emailed. Share the invitation link with the recipient; they must enter that code to create and access the account."},{status:202,headers:{"Cache-Control":"no-store"}});}catch(error){return apiError(error);}}
