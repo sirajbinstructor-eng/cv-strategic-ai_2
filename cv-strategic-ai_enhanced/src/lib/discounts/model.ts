@@ -42,9 +42,12 @@ export function calculateDiscount(input: Pick<ApplyDiscountInput, "category" | "
   if (input.category === "student") return { percent: input.nationality === "tunisian" ? 40 : 20, reason: "student" as const };
   if (input.category === "recent_graduate") {
     if (!input.graduationDate) throw Object.assign(new Error("Graduation date is required."), { status: 400 });
-    const months = (now.getUTCFullYear() - input.graduationDate.getUTCFullYear()) * 12 + now.getUTCMonth() - input.graduationDate.getUTCMonth();
     const maxMonths = input.noWorkSinceGraduation ? 24 : 12;
-    if (months < 0 || months > maxMonths) throw Object.assign(new Error(`Recent graduates must have graduated within ${maxMonths} months.`), { status: 400 });
+    const cutoff = new Date(now);
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - maxMonths);
+    if (input.graduationDate.getTime() > now.getTime() || input.graduationDate.getTime() < cutoff.getTime()) {
+      throw Object.assign(new Error(`Recent graduates must have graduated within ${maxMonths} months.`), { status: 400 });
+    }
     return { percent: input.nationality === "tunisian" ? 40 : 20, reason: "recent_graduate" as const };
   }
   if (input.category === "early_career") {
