@@ -19,6 +19,11 @@ export type EntitlementSnapshot = {
   expiresAt: string;
 };
 
+/** CV generation is a launch-trial benefit only after the user's first completed analysis. */
+export function canGenerateCv(entitlements: Pick<EntitlementSnapshot, "unlimited" | "expired" | "used">): boolean {
+  return entitlements.unlimited || (!entitlements.expired && entitlements.used === 1);
+}
+
 export function toEntitlementSnapshot(row: Record<string, unknown>): EntitlementSnapshot {
   const isAdmin = Boolean(row.is_admin);
   const isUnrestricted = Boolean(row.is_unrestricted);
