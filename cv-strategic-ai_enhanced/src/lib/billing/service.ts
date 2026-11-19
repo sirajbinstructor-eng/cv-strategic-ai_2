@@ -10,8 +10,7 @@ export class BillingService {
   const discount=await import("@/lib/discounts/repository").then(async m=>new m.DiscountRepository().getCurrent(userId));
   const percent=discount?.status==="approved"?Number(discount.discount_percent):0;
   const amount=discountedAmount(price.amountMinor,percent);
-  const intent=await repo.createPending(userId,{plan:input.plan,interval:input.interval,currency:input.currency,baseAmountMinor:price.amountMinor,discountPercent:percent,amountMinor:amount,discountApplicationId:percent?discount.id:null});
-  return {subscription: intent,price:{...price,discountPercent:percent,amountMinor:amount},quotas:PLAN_QUOTAS[input.plan][input.interval],paymentProviderStatus:"not_configured"};
+  return {subscription:null,price:{...price,discountPercent:percent,amountMinor:amount},quotas:PLAN_QUOTAS[input.plan][input.interval],paymentProviderStatus:"not_configured"};
  }
  async current(userId:string){return repo.current(userId);}
 }
