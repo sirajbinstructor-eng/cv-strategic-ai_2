@@ -294,6 +294,11 @@ export function AuthPanel({
 
   const socialSignIn = (provider: "google" | "microsoft") => {
     setMessage("");
+    if (pending) return;
+    if (!providers[provider]) {
+      setMessage(`${provider === "google" ? "Google" : "Microsoft"} sign-in is not configured on the server yet. Add the provider client ID and client secret in Render, then redeploy.`);
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -357,17 +362,21 @@ export function AuthPanel({
             <button
               className="social-button"
               type="button"
-              disabled={!providers.google || pending}
+              aria-disabled={!providers.google}
+              title={providers.google ? "Continue with Google" : "Google OAuth credentials are not configured in Render"}
+              disabled={pending}
               onClick={() => socialSignIn("google")}
             >
               <span className="google-g">G</span>
-              Continue with Google
+              Continue with Google{!providers.google ? " · setup required" : ""}
             </button>
 
             <button
               className="social-button"
               type="button"
-              disabled={!providers.microsoft || pending}
+              aria-disabled={!providers.microsoft}
+              title={providers.microsoft ? "Continue with Microsoft" : "Microsoft OAuth credentials are not configured in Render"}
+              disabled={pending}
               onClick={() => socialSignIn("microsoft")}
             >
               <span className="microsoft-mark">
@@ -376,14 +385,13 @@ export function AuthPanel({
                 <i />
                 <i />
               </span>
-              Continue with Microsoft
+              Continue with Microsoft{!providers.microsoft ? " · setup required" : ""}
             </button>
           </div>
 
           {(!providers.google || !providers.microsoft) && (
             <p className="provider-note">
-              Social sign-in is unavailable until the corresponding
-              OAuth client ID and client secret are configured.
+              Select a provider marked “setup required” to see the exact configuration action. Once its credentials are added to Render and the service is redeployed, the button will start the OAuth flow.
             </p>
           )}
 
