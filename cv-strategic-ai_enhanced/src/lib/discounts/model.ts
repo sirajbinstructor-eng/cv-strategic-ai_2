@@ -15,7 +15,7 @@ export const applyDiscountSchema = z.object({
   professionalExperienceMonths: z.number().int().min(0).max(600).optional(),
   declarationAccepted: z.literal(true)
 }).superRefine((value, ctx) => {
-  if (value.nationality === "tunisian" && !value.nationalityEvidenceType) {
+  if (!value.nationalityEvidenceType) {
     ctx.addIssue({ code: "custom", path: ["nationalityEvidenceType"], message: "Select your Tunisian nationality evidence." });
   }
   if (value.category === "student" && !value.studentEvidenceType) {
@@ -33,6 +33,10 @@ export const applyDiscountSchema = z.object({
 export const reviewDiscountSchema = z.object({
   decision: z.enum(["approved", "rejected", "revoked"]),
   reviewNotes: z.string().trim().max(1000).optional()
+}).superRefine((value, ctx) => {
+  if (value.decision === "approved" && (!value.reviewNotes || value.reviewNotes.length < 5)) {
+    ctx.addIssue({ code: "custom", path: ["reviewNotes"], message: "Record how the supporting evidence was checked before approval." });
+  }
 });
 
 export type ApplyDiscountInput = z.infer<typeof applyDiscountSchema>;
