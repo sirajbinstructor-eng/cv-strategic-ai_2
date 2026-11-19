@@ -74,6 +74,7 @@ export function AuthPanel({
 
   const [message, setMessage] = useState("");
   const [otp, setOtp] = useState("");
+  const [otpType, setOtpType] = useState<"email-verification" | "sign-in">("email-verification");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -200,21 +201,22 @@ export function AuthPanel({
 
     startTransition(async () => {
       try {
-        const result = await authClient.emailOtp.verifyEmail({
-          email,
-          otp
-        });
-
-        if (result.error) {
-          setMessage(
-            readableError(
-              result.error,
-              "The code is invalid or expired. Request a new code and try again."
-            )
-          );
+        if (otpType === "sign-in") {
+          const result = await authClient.signIn.emailOtp({ email, otp });
+          if (result.error) {
+            setMessage(readableError(result.error, "The code is invalid or expired."));
+            return;
+          }
+          router.replace("/dashboard");
+          router.refresh();
           return;
         }
 
+        const result = await authClient.emailOtp.verifyEmail({ email, otp });
+        if (result.error) {
+          setMessage(readableError(result.error, "The code is invalid or expired. Request a new code and try again."));
+          return;
+        }
         await finishSignIn(email, password);
       } catch (error) {
         console.error("[auth-client] OTP verification failed:", error);
@@ -237,7 +239,7 @@ export function AuthPanel({
         const result =
           await authClient.emailOtp.sendVerificationOtp({
             email,
-            type: "email-verification"
+            type: otpType
           });
 
         if (result.error) {
@@ -261,6 +263,31 @@ export function AuthPanel({
             "Could not resend the verification code."
           )
         );
+      }
+    });
+  };
+
+  const startOtpSignIn = () => {
+    const candidate = form.getValues("email").trim().toLowerCase();
+    if (!z.string().email().safeParse(candidate).success) {
+      form.setError("email", { message: "Enter a valid email address first." });
+      return;
+    }
+    setEmail(candidate);
+    setOtp("");
+    setOtpType("sign-in");
+    setMessage("");
+    startTransition(async () => {
+      try {
+        const result = await authClient.emailOtp.sendVerificationOtp({ email: candidate, type: "sign-in" });
+        if (result.error) {
+          setMessage(readableError(result.error, "Could not send a sign-in code."));
+          return;
+        }
+        setStage("verify");
+        setMessage("A six-digit sign-in code has been sent to your email.");
+      } catch (error) {
+        setMessage(readableError(error, "Could not send a sign-in code."));
       }
     });
   };
@@ -304,6 +331,7 @@ export function AuthPanel({
     setStage("credentials");
     setMessage("");
     setOtp("");
+    setOtpType("email-verification");
     form.clearErrors();
   };
 
@@ -440,6 +468,11 @@ export function AuthPanel({
                   : "Sign in"}
               <span aria-hidden="true">→</span>
             </button>
+            {mode === "signin" && (
+              <button className="social-button" type="button" disabled={pending} onClick={startOtpSignIn}>
+                Sign in with an email code
+              </button>
+            )}
           </form>
 
           <p className="auth-switch">
@@ -464,10 +497,10 @@ export function AuthPanel({
       ) : (
         <>
           <div className="auth-heading">
-            <p className="eyebrow">EMAIL VERIFICATION</p>
-            <h2>Check your inbox.</h2>
+            <p className="eyebrow">{otpType === "sign-in" ? "PASSWORDLESS SIGN-IN" : "EMAIL VERIFICATION"}</p>
+            <h2>{otpType === "sign-in" ? "Sign in with your code." : "Check your inbox."}</h2>
             <p className="muted">
-              We sent a six-digit verification code to:
+              {otpType === "sign-in" ? "Enter the sign-in code sent to:" : "We sent a six-digit verification code to:"}
             </p>
             <strong>{email}</strong>
           </div>
@@ -504,7 +537,7 @@ export function AuthPanel({
               disabled={pending || otp.length !== 6}
               onClick={verifyOtp}
             >
-              {pending ? "Verifying..." : "Verify email"}
+              {pending ? "Verifying..." : otpType === "sign-in" ? "Verify and sign in" : "Verify email"}
               <span aria-hidden="true">→</span>
             </button>
 
