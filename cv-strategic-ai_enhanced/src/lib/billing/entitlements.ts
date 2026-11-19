@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@/lib/db";
+import type { PoolClient } from "pg";
 import { PLAN_QUOTAS,type BillingPlan,type BillingInterval } from "./catalog";
 import { BillingRepository } from "./repository";
 const repo=new BillingRepository();
 export type BillingReservation={id:string;source:"free"|"subscription";periodStart:string|null;feature:"analysis"|"cv_generation"};
-async function getPeriod(client:any,userId:string,sub:any){
+async function getPeriod(client:PoolClient | typeof pool,userId:string,sub:any){
  const start=new Date(sub.current_period_start),end=new Date(sub.current_period_end);
  const plan=sub.plan as BillingPlan,interval=sub.billing_interval as BillingInterval;
  const quotas=PLAN_QUOTAS[plan][interval];
@@ -21,6 +22,8 @@ export async function reserveSubscriptionAnalysis(userId:string):Promise<Billing
   if(user.rows[0].is_admin||user.rows[0].is_unrestricted){await client.query("COMMIT");return null;}
   const sub=await repo.getActiveSubscription(userId,client);
   if(!sub){await client.query("COMMIT");return null;}
+  const stale=await client.query("UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE user_id=$1 AND status='reserved' AND source='subscription' AND created_at<NOW()-INTERVAL '20 minutes' RETURNING feature,usage_period_start",[userId]);
+  for(const item of stale.rows){const col=item.feature==="analysis"?"analyses":"generations";await client.query("UPDATE billing_usage_periods SET "+col+"_reserved=GREATEST(0,"+col+"_reserved-1),updated_at=NOW() WHERE user_id=$1 AND period_start=$2",[userId,item.usage_period_start]);}
   const period=await getPeriod(client,userId,sub);
   const update=await client.query(`UPDATE billing_usage_periods SET analyses_reserved=analyses_reserved+1,updated_at=NOW()
    WHERE id=$1 AND analyses_used+analyses_reserved<analyses_limit RETURNING id`,[period.id]);
@@ -34,6 +37,8 @@ export async function reserveCvGeneration(userId:string,analysisId:string):Promi
  const client=await pool.connect();try{await client.query("BEGIN");
   const user=await client.query('SELECT is_admin,is_unrestricted,analysis_trials_used FROM "user" WHERE id=$1 FOR UPDATE',[userId]);
   if(!user.rowCount)throw Object.assign(Error("Account not found."),{status:404});
+  const stale=await client.query("UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE user_id=$1 AND status='reserved' AND created_at<NOW()-INTERVAL '20 minutes' RETURNING feature,source,usage_period_start",[userId]);
+  for(const item of stale.rows){if(item.source==="subscription"){const col=item.feature==="analysis"?"analyses":"generations";await client.query("UPDATE billing_usage_periods SET "+col+"_reserved=GREATEST(0,"+col+"_reserved-1),updated_at=NOW() WHERE user_id=$1 AND period_start=$2",[userId,item.usage_period_start]);}}
   const analysis=await client.query("SELECT id FROM analysis_records WHERE id=$1 AND user_id=$2",[analysisId,userId]);
   if(!analysis.rowCount)throw Object.assign(Error("This analysis is unavailable."),{status:404});
   if(user.rows[0].is_admin||user.rows[0].is_unrestricted){await client.query("COMMIT");return {id:"",source:"free",periodStart:null,feature:"cv_generation"};}
