@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
 import { AdminUserRepository } from "@/lib/admin/repository";
 export const dynamic = "force-dynamic";
 export default async function AdminPage() {
+  await ensureAuthSchema();
   const repo = new AdminUserRepository();
   const users = await repo.list({ role: "all", limit: 1, offset: 0 });
   const admins = await repo.list({ role: "admin", limit: 1, offset: 0 });
