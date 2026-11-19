@@ -5,9 +5,9 @@ import { PLAN_QUOTAS,type BillingPlan,type BillingInterval } from "./catalog";
 import { BillingRepository } from "./repository";
 const repo=new BillingRepository();
 export type BillingReservation={id:string;source:"free"|"subscription";periodStart:string|null;feature:"analysis"|"cv_generation"};
-async function getPeriod(client:PoolClient | typeof pool,userId:string,sub:any){
- const start=new Date(sub.current_period_start),end=new Date(sub.current_period_end);
- const plan=sub.plan as BillingPlan,interval=sub.billing_interval as BillingInterval;
+async function getPeriod(client:PoolClient | typeof pool,userId:string,sub:Record<string,unknown>){
+ const start=new Date(sub.current_period_start as string|Date),end=new Date(sub.current_period_end as string|Date);
+ const plan=String(sub.plan) as BillingPlan,interval=String(sub.billing_interval) as BillingInterval;
  const quotas=PLAN_QUOTAS[plan][interval];
  await client.query(`INSERT INTO billing_usage_periods(id,user_id,period_start,period_end,plan,billing_interval,analyses_limit,generations_limit)
   VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(user_id,period_start) DO NOTHING`,
