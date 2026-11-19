@@ -1,6 +1,6 @@
 import {randomUUID} from "node:crypto";
 import {pool} from "@/lib/db";
-import type {CreateInput,UpdateInput} from "./model";
+import type {UpdateInput} from "./model";
 const cols="id,name,email,email_verified,created_at,updated_at,is_admin,is_unrestricted,consultant_entitled,analysis_trials_granted,analysis_trials_used,analysis_trials_reserved,analysis_trial_expires_at";
 export class AdminUserRepository {
  async list(x:{q?:string;role:string;limit:number;offset:number}) {
@@ -14,7 +14,6 @@ export class AdminUserRepository {
  }
  async get(id:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE id=$1',[id]);return r.rows[0]||null;}
  async byEmail(email:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE lower(email)=lower($1)',[email]);return r.rows[0]||null;}
- async create(x:CreateInput){const r=await pool.query('INSERT INTO "user"(id,name,email,email_verified,is_admin,is_unrestricted,consultant_entitled,analysis_trials_granted) VALUES($1,$2,$3,false,$4,$5,$6,$7) RETURNING '+cols,[randomUUID(),x.name,x.email,x.isAdmin,x.isUnrestricted,x.consultantEntitled,x.analysisTrialsGranted]);return r.rows[0];}
  async update(id:string,x:UpdateInput){
   const map:Record<string,string>={name:"name",email:"email",emailVerified:"email_verified",isAdmin:"is_admin",isUnrestricted:"is_unrestricted",consultantEntitled:"consultant_entitled",analysisTrialsGranted:"analysis_trials_granted"};
   const entries=Object.entries(x).filter(([key])=>map[key]);if(!entries.length)return this.get(id);
