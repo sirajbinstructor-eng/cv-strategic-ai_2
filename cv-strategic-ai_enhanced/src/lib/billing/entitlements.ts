@@ -26,6 +26,7 @@ export async function reserveSubscriptionAnalysis(userId:string):Promise<Billing
    WHERE id=$1 AND analyses_used+analyses_reserved<analyses_limit RETURNING id`,[period.id]);
   if(!update.rowCount)throw Object.assign(Error("You have reached your analysis quota for this billing period. Upgrade your plan or wait for the next period."),{status:402,code:"ANALYSIS_QUOTA_EXHAUSTED"});
   const id=randomUUID();await client.query("INSERT INTO entitlement_reservations(id,user_id,feature,source,usage_period_start,status) VALUES($1,$2,'analysis','subscription',$3,'reserved')",[id,userId,period.period_start]);
+  await client.query("INSERT INTO analysis_usage(id,user_id,status,mode) VALUES($1,$2,'reserved','automatic')",[id,userId]);
   await client.query("COMMIT");return {id,source:"subscription",periodStart:new Date(period.period_start).toISOString(),feature:"analysis"};
  }catch(e){await client.query("ROLLBACK").catch(()=>{});throw e;}finally{client.release();}
 }
