@@ -41,7 +41,7 @@ export function DashboardShell() {
 
   return (
     <main className="dashboard-page">
-      <header className="dashboard-header"><Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Intelligent career positioning</small></span></Link><div className="header-actions"><span className="user-chip">{user.name || user.email}</span><Link href="/dashboard/settings" className="header-link">Account settings</Link><button className="button-quiet" onClick={signOut}>Sign out</button></div></header>
+      <header className="dashboard-header"><Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Intelligent career positioning</small></span></Link><div className="header-actions"><span className="user-chip">{user.name || user.email}</span><Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link><Link href="/dashboard/settings" className="header-link">Account settings</Link><button className="button-quiet" onClick={signOut}>Sign out</button></div></header>
       <div className="dashboard-main">
         <section className="dashboard-welcome"><div><p className="eyebrow">PERSONAL DASHBOARD</p><h1>Welcome{user.name ? `, ${user.name.split(" ")[0]}` : " back"}.</h1><p className="muted">Your CV strategy workspace and account overview.</p></div><div className="dashboard-date">CV STRATEGIST AI <span>YOUR CAREER, BETTER POSITIONED</span></div></section>
         <TrialStatus entitlements={entitlements} onUpgrade={() => setShowUpgrade(true)} />
