@@ -16,7 +16,7 @@ const isApprovedAdmin=(email:string)=> (ADMIN_EMAILS as readonly string[]).inclu
 export const auth=betterAuth({
  appName:"CV Strategist AI",baseURL,secret:process.env.BETTER_AUTH_SECRET||"development-only-change-this-secret-before-deploying",trustedOrigins:[baseURL],
  database:drizzleAdapter(db,{provider:"pg",schema:{user:schema.user,session:schema.session,account:schema.account,verification:schema.verification}}),
- account:{accountLinking:{enabled:false}},
+ account:{accountLinking:{enabled:true,trustedProviders:["google","microsoft"]}},
  emailAndPassword:{enabled:true,minPasswordLength:10,maxPasswordLength:128,requireEmailVerification:true},
  emailVerification:{sendOnSignUp:true,sendOnSignIn:true,autoSignInAfterVerification:false},
  plugins:[emailOTP({otpLength:6,expiresIn:300,allowedAttempts:5,resendStrategy:"rotate",overrideDefaultEmailVerification:true,async sendVerificationOTP({email,otp,type}){await sendOtpEmail({to:email,otp,type});}})],
