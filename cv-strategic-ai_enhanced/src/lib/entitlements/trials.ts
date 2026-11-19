@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@/lib/db";
+import { reserveSubscriptionAnalysis, getBillingEntitlements } from "@/lib/billing/entitlements";
 
 // 31 Dec 2026, 23:59:59 Africa/Tunis (UTC+01:00) inclusive.
 export const TRIAL_EXPIRY_UTC = new Date("2026-12-31T23:00:00.000Z");
@@ -17,6 +18,7 @@ export type EntitlementSnapshot = {
   unlimited: boolean;
   workspaceLocked: boolean;
   expiresAt: string;
+  subscription?: { plan:string; interval:string; status:string; analyses:{limit:number;used:number;reserved:number;remaining:number}; generations:{limit:number;used:number;reserved:number;remaining:number}; periodEnd:string };
 };
 
 /** CV generation is a launch-trial benefit only after the user's first completed analysis. */
@@ -51,22 +53,30 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
        FROM "user" WHERE id = $1 LIMIT 1`,
     [userId]
   );
-  return result.rows[0] ? toEntitlementSnapshot(result.rows[0]) : null;
+  if (!result.rows[0]) return null;
+  const snapshot=toEntitlementSnapshot(result.rows[0]);
+  const paid=await getBillingEntitlements(userId);
+  if(!paid)return snapshot;
+  return {...snapshot,consultantEntitled:paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
 }
 
-export type TrialReservation = { id: string; bypassed: boolean };
+export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
-export async function reserveAnalysisTrial(userId: string): Promise<TrialReservation> {
+export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "consultant" = "automatic"): Promise<TrialReservation> {
+  const paidReservation = await reserveSubscriptionAnalysis(userId, mode);
+  if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
   const reservationId = randomUUID();
   try {
     await client.query("BEGIN");
-    // Release abandoned reservations left by a crashed request (20-minute safety window).
+    // Release abandoned paid reservations and restore their billing-period counters.
+    await client.query("WITH stale AS (UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE status='reserved' AND source='subscription' AND created_at<NOW()-INTERVAL '20 minutes' RETURNING user_id,feature,usage_period_start) UPDATE billing_usage_periods b SET analyses_reserved=CASE WHEN stale.feature='analysis' THEN GREATEST(0,b.analyses_reserved-1) ELSE b.analyses_reserved END,generations_reserved=CASE WHEN stale.feature='cv_generation' THEN GREATEST(0,b.generations_reserved-1) ELSE b.generations_reserved END,updated_at=NOW() FROM stale WHERE b.user_id=stale.user_id AND b.period_start=stale.usage_period_start");
+    // Release abandoned free-trial reservations left by a crashed request.
     await client.query(
       `WITH stale AS (
          UPDATE analysis_usage SET status = 'released', failure_code = 'RESERVATION_TIMEOUT'
-          WHERE status = 'reserved' AND created_at < NOW() - INTERVAL '20 minutes'
+          WHERE status = 'reserved' AND created_at < NOW() - INTERVAL '20 minutes' AND NOT EXISTS (SELECT 1 FROM entitlement_reservations er WHERE er.id=analysis_usage.id AND er.source='subscription')
           RETURNING user_id
        ), grouped AS (
          SELECT user_id, COUNT(*)::integer AS released_count FROM stale GROUP BY user_id
@@ -106,11 +116,11 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
       throw error;
     }
     await client.query(
-      `INSERT INTO analysis_usage (id, user_id, status, mode) VALUES ($1, $2, 'reserved', 'automatic')`,
-      [reservationId, userId]
+      `INSERT INTO analysis_usage (id, user_id, status, mode) VALUES ($1, $2, 'reserved', $3)`,
+      [reservationId, userId, mode]
     );
     await client.query("COMMIT");
-    return { id: reservationId, bypassed: false };
+    return { id: reservationId, bypassed: false, source: "trial" };
   } catch (error) {
     try { await client.query("ROLLBACK"); } catch { /* transaction may already be closed */ }
     throw error;
@@ -122,7 +132,7 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
 export async function completeAnalysisTrial(
   userId: string,
   reservation: TrialReservation,
-  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown> }
+  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "automatic" | "consultant" }
 ): Promise<void> {
   const client = await pool.connect();
   try {
@@ -134,20 +144,23 @@ export async function completeAnalysisTrial(
         [reservation.id, userId]
       );
       if (!usage.rowCount) throw new Error("Trial reservation is no longer valid.");
-      const update = await client.query(
-        `UPDATE "user"
-            SET analysis_trials_reserved = GREATEST(0, analysis_trials_reserved - 1),
-                analysis_trials_used = analysis_trials_used + 1,
-                updated_at = NOW()
-          WHERE id = $1 RETURNING id`,
-        [userId]
-      );
-      if (!update.rowCount) throw new Error("Account not found while completing trial.");
+      const entitlement = await client.query("SELECT source,usage_period_start FROM entitlement_reservations WHERE id=$1 AND user_id=$2 FOR UPDATE",[reservation.id,userId]);
+      if (entitlement.rowCount && entitlement.rows[0].source === "subscription") {
+        const counters = await client.query(`UPDATE billing_usage_periods SET analyses_reserved=GREATEST(0,analyses_reserved-1),analyses_used=analyses_used+1,updated_at=NOW() WHERE user_id=$1 AND period_start=$2`,[userId,entitlement.rows[0].usage_period_start]);
+        if (!counters.rowCount) throw new Error("Subscription usage period not found.");
+        await client.query("UPDATE entitlement_reservations SET status='consumed',completed_at=NOW() WHERE id=$1 AND status='reserved'",[reservation.id]);
+      } else {
+        const update = await client.query(
+          `UPDATE "user" SET analysis_trials_reserved=GREATEST(0,analysis_trials_reserved-1),analysis_trials_used=analysis_trials_used+1,updated_at=NOW() WHERE id=$1 RETURNING id`,
+          [userId]
+        );
+        if (!update.rowCount) throw new Error("Account not found while completing trial.");
+      }
     }
     await client.query(
       `INSERT INTO analysis_records (id, user_id, mode, target_title, match_score, result)
-       VALUES ($1, $2, 'automatic', $3, $4, $5::jsonb)`,
-      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result)]
+       VALUES ($1, $2, $6, $3, $4, $5::jsonb)`,
+      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "automatic"]
     );
     await client.query("COMMIT");
   } catch (error) {
@@ -169,10 +182,13 @@ export async function releaseAnalysisTrial(userId: string, reservation: TrialRes
       [reservation.id, userId, failureCode.slice(0, 80)]
     );
     if (usage.rowCount) {
-      await client.query(
-        `UPDATE "user" SET analysis_trials_reserved = GREATEST(0, analysis_trials_reserved - 1), updated_at = NOW() WHERE id = $1`,
-        [userId]
-      );
+      const entitlement = await client.query("SELECT source,usage_period_start FROM entitlement_reservations WHERE id=$1 AND user_id=$2 FOR UPDATE",[reservation.id,userId]);
+      if (entitlement.rowCount && entitlement.rows[0].source === "subscription") {
+        await client.query("UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE id=$1 AND status='reserved'",[reservation.id]);
+        await client.query(`UPDATE billing_usage_periods SET analyses_reserved=GREATEST(0,analyses_reserved-1),updated_at=NOW() WHERE user_id=$1 AND period_start=$2`,[userId,entitlement.rows[0].usage_period_start]);
+      } else {
+        await client.query(`UPDATE "user" SET analysis_trials_reserved=GREATEST(0,analysis_trials_reserved-1),updated_at=NOW() WHERE id=$1`,[userId]);
+      }
     }
     await client.query("COMMIT");
   } catch {

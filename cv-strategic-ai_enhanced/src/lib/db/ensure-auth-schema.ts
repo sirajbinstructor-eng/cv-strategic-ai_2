@@ -46,7 +46,44 @@ async function bootstrap(): Promise<void> {
     )`,
     `CREATE INDEX IF NOT EXISTS discount_applications_user_status_idx ON discount_applications(user_id,status)`,
     `CREATE INDEX IF NOT EXISTS discount_applications_status_created_idx ON discount_applications(status,created_at)`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS discount_one_active_application_per_user ON discount_applications(user_id) WHERE status IN ('pending','approved')`
+    `CREATE UNIQUE INDEX IF NOT EXISTS discount_one_active_application_per_user ON discount_applications(user_id) WHERE status IN ('pending','approved')`,
+    `CREATE TABLE IF NOT EXISTS billing_subscriptions (
+      id text PRIMARY KEY,user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+      provider text NOT NULL DEFAULT 'unselected',provider_subscription_id text,
+      plan text NOT NULL CHECK(plan IN ('pro','consultant')),billing_interval text NOT NULL CHECK(billing_interval IN ('monthly','annual')),
+      currency text NOT NULL CHECK(currency IN ('USD','EUR','TND')),base_amount_minor integer NOT NULL CHECK(base_amount_minor>0),
+      discount_percent integer NOT NULL DEFAULT 0 CHECK(discount_percent BETWEEN 0 AND 100),amount_minor integer NOT NULL CHECK(amount_minor>=0),
+      discount_application_id text REFERENCES discount_applications(id) ON DELETE SET NULL,
+      status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','past_due','canceled_at_period_end','expired','refunded','disputed')),
+      current_period_start timestamptz,current_period_end timestamptz,cancel_at_period_end boolean NOT NULL DEFAULT false,canceled_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now()
+    )`,
+    `CREATE INDEX IF NOT EXISTS billing_subscriptions_user_status_idx ON billing_subscriptions(user_id,status)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS billing_provider_subscription_unique ON billing_subscriptions(provider,provider_subscription_id) WHERE provider_subscription_id IS NOT NULL`,
+    `CREATE TABLE IF NOT EXISTS billing_usage_periods (
+      id text PRIMARY KEY,user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+      period_start timestamptz NOT NULL,period_end timestamptz NOT NULL CHECK(period_end>period_start),
+      plan text NOT NULL CHECK(plan IN ('pro','consultant')),billing_interval text NOT NULL CHECK(billing_interval IN ('monthly','annual')),
+      analyses_limit integer NOT NULL,analyses_used integer NOT NULL DEFAULT 0,analyses_reserved integer NOT NULL DEFAULT 0,
+      generations_limit integer NOT NULL,generations_used integer NOT NULL DEFAULT 0,generations_reserved integer NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(user_id,period_start),
+      CHECK(analyses_used>=0 AND analyses_reserved>=0 AND generations_used>=0 AND generations_reserved>=0),
+      CHECK(analyses_used+analyses_reserved<=analyses_limit AND generations_used+generations_reserved<=generations_limit)
+    )`,
+    `CREATE TABLE IF NOT EXISTS entitlement_reservations (
+      id text PRIMARY KEY,user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+      feature text NOT NULL CHECK(feature IN ('analysis','cv_generation')),source text NOT NULL CHECK(source IN ('free','subscription')),
+      usage_period_start timestamptz,status text NOT NULL CHECK(status IN ('reserved','consumed','released')),
+      created_at timestamptz NOT NULL DEFAULT now(),completed_at timestamptz
+    )`,
+    `CREATE INDEX IF NOT EXISTS entitlement_reservations_user_feature_status_idx ON entitlement_reservations(user_id,feature,source,status)`,
+    `CREATE TABLE IF NOT EXISTS billing_events (
+      id text PRIMARY KEY,provider text NOT NULL,provider_event_id text NOT NULL,event_type text NOT NULL,
+      processing_status text NOT NULL DEFAULT 'received' CHECK(processing_status IN ('received','processed','failed')),
+      error_code text,received_at timestamptz NOT NULL DEFAULT now(),processed_at timestamptz,
+      UNIQUE(provider,provider_event_id)
+    )`
   ];
   const client = await pool.connect();
   try {

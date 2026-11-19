@@ -22,4 +22,4 @@ jobs:
       - name: TypeScript validation
         run: npm run typecheck
       - name: Unit tests
-        run: npx tsx --test tests/scoring.test.ts tests/admin-validation.test.ts
+        run: npm test

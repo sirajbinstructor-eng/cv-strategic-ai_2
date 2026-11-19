@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/server-session";
 import { askGroqForJson } from "@/lib/ai/groq";
 import { pool } from "@/lib/db";
 import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
-import { canGenerateCv, getEntitlements } from "@/lib/entitlements/trials";
+import { reserveCvGeneration, completeEntitlementReservation, releaseEntitlementReservation, type BillingReservation } from "@/lib/billing/entitlements";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -43,6 +43,7 @@ function bullet(text: string) {
 }
 
 export async function POST(request: NextRequest) {
+  let generationReservation: BillingReservation | null = null;
   try {
     await ensureAuthSchema();
     const user = await requireUser();
@@ -59,12 +60,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "This analysis is unavailable. Please run an eligible analysis before generating a CV." }, { status: 404 });
     }
 
-    const entitlements = await getEntitlements(user.id);
-    if (!entitlements || !canGenerateCv(entitlements)) {
-      return NextResponse.json({
-        error: "Your free CV generation has already been used. Upgrade your plan to generate more targeted CVs."
-      }, { status: 402, headers: { "Cache-Control": "no-store" } });
-    }
+    generationReservation = await reserveCvGeneration(user.id, analysisId);
+
     const isFrench = analysis.language === "fr";
     const labels = isFrench
       ? { summary: "PROFIL PROFESSIONNEL", skills: "COMPÉTENCES CLÉS", experience: "EXPÉRIENCE PROFESSIONNELLE", education: "FORMATION", certifications: "CERTIFICATIONS", interests: "CENTRES D’INTÉRÊT" }
@@ -135,6 +132,8 @@ export async function POST(request: NextRequest) {
         }
         pdf.end();
       });
+      await completeEntitlementReservation(generationReservation);
+      generationReservation = null;
       return new NextResponse(new Uint8Array(pdfBuffer), {
         status: 200,
         headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${safeFileName}.pdf"`, "Cache-Control": "no-store" }
@@ -148,6 +147,8 @@ export async function POST(request: NextRequest) {
       styles: { default: { document: { run: { font: "Arial", size: 20 } } } }
     });
     const buffer = await Packer.toBuffer(doc);
+    await completeEntitlementReservation(generationReservation);
+    generationReservation = null;
     const filename = `${safeFileName}.docx`;
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (cause) {
+    if (generationReservation) await releaseEntitlementReservation(generationReservation).catch(error => console.error("[BILLING_RESERVATION_RELEASE]", error));
     const error = cause as { message?: string; status?: number };
     return NextResponse.json({ error: error.message || "CV generation failed." }, { status: Number(error.status || 500) });
   }

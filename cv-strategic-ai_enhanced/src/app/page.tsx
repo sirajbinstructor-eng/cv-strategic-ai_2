@@ -3,6 +3,8 @@ import { getCurrentSession } from "@/lib/server-session";
 import { AuthPanel } from "@/components/auth/auth-panel";
 import { LaunchOfferBanner } from "@/components/dashboard/launch-offer-banner";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const session = await getCurrentSession();
   if (session?.user) redirect("/dashboard");

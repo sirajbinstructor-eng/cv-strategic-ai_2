@@ -1,0 +1,10 @@
+import { z } from "zod";
+export const planSchema=z.enum(["pro","consultant"]);
+export const intervalSchema=z.enum(["monthly","annual"]);
+export const currencySchema=z.enum(["USD","EUR","TND"]);
+export const subscriptionStatusSchema=z.enum(["pending","active","past_due","canceled_at_period_end","expired","refunded","disputed"]);
+export const checkoutRequestSchema=z.object({plan:planSchema,interval:intervalSchema,currency:currencySchema});
+export const subscriptionAdminUpdateSchema=z.object({status:subscriptionStatusSchema.optional(),cancelAtPeriodEnd:z.boolean().optional()}).refine(x=>Object.keys(x).length>0);
+export type SubscriptionStatus=z.infer<typeof subscriptionStatusSchema>;
+export type CheckoutRequest=z.infer<typeof checkoutRequestSchema>;
+export const providerSchema=z.enum(["paddle","konnect","paymaster","manual"]);
