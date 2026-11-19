@@ -5,11 +5,15 @@ import PDFDocument from "pdfkit";
 import path from "node:path";
 import { requireUser } from "@/lib/server-session";
 import { askGroqForJson } from "@/lib/ai/groq";
+import { pool } from "@/lib/db";
+import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
+import { canGenerateCv, getEntitlements } from "@/lib/entitlements/trials";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const payloadSchema = z.object({
+  analysisId: z.string().uuid(),
   analysis: z.record(z.string(), z.unknown()),
   sourceCvText: z.string().min(80).max(60_000),
   jobDescription: z.string().min(80).max(30_000),
@@ -40,10 +44,27 @@ function bullet(text: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireUser();
+    await ensureAuthSchema();
+    const user = await requireUser();
     const parsed = payloadSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: "The CV generation request is incomplete." }, { status: 400 });
-    const { analysis, sourceCvText, jobDescription, candidateName, contact, confirmedFacts, format } = parsed.data;
+    const { analysisId, analysis, sourceCvText, jobDescription, candidateName, contact, confirmedFacts, format } = parsed.data;
+
+    // A generation request must reference a real analysis owned by the signed-in user.
+    const record = await pool.query(
+      `SELECT id FROM analysis_records WHERE id = $1 AND user_id = $2 LIMIT 1`,
+      [analysisId, user.id]
+    );
+    if (!record.rowCount) {
+      return NextResponse.json({ error: "This analysis is unavailable. Please run an eligible analysis before generating a CV." }, { status: 404 });
+    }
+
+    const entitlements = await getEntitlements(user.id);
+    if (!entitlements || !canGenerateCv(entitlements)) {
+      return NextResponse.json({
+        error: "Your free CV generation has already been used. Upgrade your plan to generate more targeted CVs."
+      }, { status: 402, headers: { "Cache-Control": "no-store" } });
+    }
     const isFrench = analysis.language === "fr";
     const labels = isFrench
       ? { summary: "PROFIL PROFESSIONNEL", skills: "COMPÉTENCES CLÉS", experience: "EXPÉRIENCE PROFESSIONNELLE", education: "FORMATION", certifications: "CERTIFICATIONS", interests: "CENTRES D’INTÉRÊT" }
