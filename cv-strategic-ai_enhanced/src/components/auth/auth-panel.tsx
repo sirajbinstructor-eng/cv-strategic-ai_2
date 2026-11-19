@@ -296,7 +296,7 @@ export function AuthPanel({
     setMessage("");
     if (pending) return;
     if (!providers[provider]) {
-      setMessage(`${provider === "google" ? "Google" : "Microsoft"} sign-in is not configured on the server yet. Add the provider client ID and client secret in Render, then redeploy.`);
+      setMessage(provider === "google" ? "Google sign-in is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Render, then redeploy." : "Microsoft sign-in is not configured. Add MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in Render, then redeploy.");
       return;
     }
 
@@ -391,7 +391,7 @@ export function AuthPanel({
 
           {(!providers.google || !providers.microsoft) && (
             <p className="provider-note">
-              Select a provider marked “setup required” to see the exact configuration action. Once its credentials are added to Render and the service is redeployed, the button will start the OAuth flow.
+              Select a provider marked “setup required” for the exact Render variable names. You can also inspect the safe server diagnostic at <a href="/api/auth/status" target="_blank" rel="noreferrer">OAuth configuration status</a>.
             </p>
           )}
 
