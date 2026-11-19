@@ -1,0 +1,1 @@
+import {InviteAccept} from "@/components/auth/invite-accept";type Props={searchParams:Promise<{email?:string;name?:string}>};export default async function InvitePage({searchParams}:Props){const q=await searchParams;return <InviteAccept initialEmail={q.email||""} initialName={q.name||""}/>;}
