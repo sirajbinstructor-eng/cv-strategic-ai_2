@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   "analysis_trials_granted" integer NOT NULL DEFAULT 3,
   "analysis_trials_used" integer NOT NULL DEFAULT 0,
   "analysis_trials_reserved" integer NOT NULL DEFAULT 0,
-  "analysis_trial_expires_at" timestamptz NOT NULL DEFAULT '2026-12-31T23:00:00.000Z',
+  "analysis_trial_expires_at" timestamptz NOT NULL DEFAULT '2026-12-31T22:59:59.000Z',
   CONSTRAINT "user_trial_counters_nonnegative" CHECK ("analysis_trials_granted" >= 0 AND "analysis_trials_used" >= 0 AND "analysis_trials_reserved" >= 0),
   CONSTRAINT "user_trial_reservation_cap" CHECK ("analysis_trials_used" + "analysis_trials_reserved" <= "analysis_trials_granted")
 );
