@@ -2,8 +2,11 @@
 import { randomUUID } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { emailOTP } from "better-auth/plugins";
+
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
+import { sendOtpEmail } from "@/lib/email";
 
 const googleConfigured = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -15,25 +18,29 @@ const microsoftConfigured = Boolean(
 
 if (
   process.env.NODE_ENV === "production" &&
-  (!process.env.BETTER_AUTH_SECRET || !process.env.BETTER_AUTH_URL)
+  (
+    !process.env.BETTER_AUTH_SECRET ||
+    !process.env.BETTER_AUTH_URL ||
+    !process.env.GOOGLE_SCRIPT_URL ||
+    !process.env.GOOGLE_SCRIPT_SECRET
+  )
 ) {
   throw new Error(
-    "BETTER_AUTH_SECRET and BETTER_AUTH_URL are required in production."
+    "BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_SCRIPT_URL and GOOGLE_SCRIPT_SECRET are required in production."
   );
 }
 
+const baseURL =
+  process.env.BETTER_AUTH_URL || "http://localhost:3000";
+
 export const auth = betterAuth({
   appName: "CV Strategist AI",
-
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-
+  baseURL,
   secret:
     process.env.BETTER_AUTH_SECRET ||
     "development-only-change-this-secret-before-deploying",
 
-  trustedOrigins: [
-    process.env.BETTER_AUTH_URL || "http://localhost:3000"
-  ],
+  trustedOrigins: [baseURL],
 
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -55,8 +62,32 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 10,
     maxPasswordLength: 128,
-    requireEmailVerification: false
+    requireEmailVerification: true
   },
+
+  emailVerification: {
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: false
+  },
+
+  plugins: [
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 300,
+      allowedAttempts: 5,
+      resendStrategy: "rotate",
+      overrideDefaultEmailVerification: true,
+
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOtpEmail({
+          to: email,
+          otp,
+          type
+        });
+      }
+    })
+  ],
 
   socialProviders: {
     ...(googleConfigured
@@ -90,42 +121,36 @@ export const auth = betterAuth({
         defaultValue: false,
         input: false
       },
-
       isUnrestricted: {
         type: "boolean",
         required: false,
         defaultValue: false,
         input: false
       },
-
       consultantEntitled: {
         type: "boolean",
         required: false,
         defaultValue: false,
         input: false
       },
-
       analysisTrialsGranted: {
         type: "number",
         required: false,
         defaultValue: 3,
         input: false
       },
-
       analysisTrialsUsed: {
         type: "number",
         required: false,
         defaultValue: 0,
         input: false
       },
-
       analysisTrialsReserved: {
         type: "number",
         required: false,
         defaultValue: 0,
         input: false
       },
-
       analysisTrialExpiresAt: {
         type: "date",
         required: false,
@@ -137,10 +162,9 @@ export const auth = betterAuth({
 
   advanced: {
     database: {
-      // Generate the UUID in Node.js instead of relying on a PostgreSQL column default.
+      // Generate the UUID in the application, not PostgreSQL.
       generateId: () => randomUUID()
     },
-
     useSecureCookies: process.env.NODE_ENV === "production"
   },
 
