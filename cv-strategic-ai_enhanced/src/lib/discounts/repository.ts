@@ -5,11 +5,6 @@ import type { ApplyDiscountInput, ReviewDiscountInput } from "./model";
 const columns = `id,user_id,category,nationality,nationality_evidence_type,student_evidence_type,graduation_date,no_work_since_graduation,professional_experience_months,discount_percent,status,review_notes,reviewed_by,reviewed_at,created_at,updated_at`;
 
 export class DiscountRepository {
-  async getById(id:string) {
-    const result=await pool.query(`SELECT ${columns} FROM discount_applications WHERE id=$1 LIMIT 1`,[id]);
-    return result.rows[0]||null;
-  }
-
   async getCurrent(userId: string) {
     const result = await pool.query(`SELECT ${columns} FROM discount_applications WHERE user_id=$1 AND status IN ('pending','approved') ORDER BY created_at DESC LIMIT 1`, [userId]);
     return result.rows[0] || null;
