@@ -24,7 +24,7 @@ export default async function HomePage() {
             <h1>A CV that tells the right professional story.</h1>
             <p className="hero-description">Analyze your experience against a target opportunity, identify the evidence that matters, and build a more relevant ATS-friendly CV — without inventing facts.</p>
             <div className="hero-points"><span>01&nbsp; Analyze</span><span>02&nbsp; Understand</span><span>03&nbsp; Generate</span></div>
-            <div className="trust-points"><span>Evidence-first assessment</span><span>Source chronology preserved</span><span>Groq-powered AI</span></div>
+            <div className="trust-points"><span>Evidence-first assessment</span><span>Source chronology preserved</span><span>AI-powered</span></div>
           </div>
           <div className="auth-wrap" id="sign-in"><AuthPanel providers={providers} /></div>
         </section>
