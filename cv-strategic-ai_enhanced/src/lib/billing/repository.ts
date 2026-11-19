@@ -5,7 +5,7 @@ import type { SubscriptionStatus } from "./model";
 export class BillingRepository {
  async current(userId:string){
   const r=await pool.query(`SELECT id,provider,provider_subscription_id,plan,billing_interval,currency,base_amount_minor,discount_percent,amount_minor,status,current_period_start,current_period_end,cancel_at_period_end,canceled_at,created_at,updated_at
-   FROM billing_subscriptions WHERE user_id=$1 AND status IN ('pending','active','past_due','canceled_at_period_end') ORDER BY created_at DESC LIMIT 1`,[userId]);
+   FROM billing_subscriptions WHERE user_id=$1 AND (status IN ('active','past_due','canceled_at_period_end') OR (status='pending' AND created_at>NOW()-INTERVAL '30 minutes')) ORDER BY created_at DESC LIMIT 1`,[userId]);
   return r.rows[0]||null;
  }
  async createPending(userId:string,quote:{plan:BillingPlan;interval:BillingInterval;currency:BillingCurrency;baseAmountMinor:number;discountPercent:number;amountMinor:number;discountApplicationId:string|null}){
