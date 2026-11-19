@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@/lib/db";
+import { reserveSubscriptionAnalysis } from "@/lib/billing/entitlements";
 
 // 31 Dec 2026, 23:59:59 Africa/Tunis (UTC+01:00) inclusive.
 export const TRIAL_EXPIRY_UTC = new Date("2026-12-31T23:00:00.000Z");
@@ -54,10 +55,12 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
   return result.rows[0] ? toEntitlementSnapshot(result.rows[0]) : null;
 }
 
-export type TrialReservation = { id: string; bypassed: boolean };
+export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
 export async function reserveAnalysisTrial(userId: string): Promise<TrialReservation> {
+  const paidReservation = await reserveSubscriptionAnalysis(userId);
+  if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
   const reservationId = randomUUID();
   try {
@@ -110,7 +113,7 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
       [reservationId, userId]
     );
     await client.query("COMMIT");
-    return { id: reservationId, bypassed: false };
+    return { id: reservationId, bypassed: false, source: "trial" };
   } catch (error) {
     try { await client.query("ROLLBACK"); } catch { /* transaction may already be closed */ }
     throw error;
@@ -134,15 +137,18 @@ export async function completeAnalysisTrial(
         [reservation.id, userId]
       );
       if (!usage.rowCount) throw new Error("Trial reservation is no longer valid.");
-      const update = await client.query(
-        `UPDATE "user"
-            SET analysis_trials_reserved = GREATEST(0, analysis_trials_reserved - 1),
-                analysis_trials_used = analysis_trials_used + 1,
-                updated_at = NOW()
-          WHERE id = $1 RETURNING id`,
-        [userId]
-      );
-      if (!update.rowCount) throw new Error("Account not found while completing trial.");
+      const entitlement = await client.query("SELECT source,usage_period_start FROM entitlement_reservations WHERE id=$1 AND user_id=$2 FOR UPDATE",[reservation.id,userId]);
+      if (entitlement.rowCount && entitlement.rows[0].source === "subscription") {
+        const counters = await client.query(`UPDATE billing_usage_periods SET analyses_reserved=GREATEST(0,analyses_reserved-1),analyses_used=analyses_used+1,updated_at=NOW() WHERE user_id=$1 AND period_start=$2`,[userId,entitlement.rows[0].usage_period_start]);
+        if (!counters.rowCount) throw new Error("Subscription usage period not found.");
+        await client.query("UPDATE entitlement_reservations SET status='consumed',completed_at=NOW() WHERE id=$1 AND status='reserved'",[reservation.id]);
+      } else {
+        const update = await client.query(
+          `UPDATE "user" SET analysis_trials_reserved=GREATEST(0,analysis_trials_reserved-1),analysis_trials_used=analysis_trials_used+1,updated_at=NOW() WHERE id=$1 RETURNING id`,
+          [userId]
+        );
+        if (!update.rowCount) throw new Error("Account not found while completing trial.");
+      }
     }
     await client.query(
       `INSERT INTO analysis_records (id, user_id, mode, target_title, match_score, result)
@@ -169,10 +175,13 @@ export async function releaseAnalysisTrial(userId: string, reservation: TrialRes
       [reservation.id, userId, failureCode.slice(0, 80)]
     );
     if (usage.rowCount) {
-      await client.query(
-        `UPDATE "user" SET analysis_trials_reserved = GREATEST(0, analysis_trials_reserved - 1), updated_at = NOW() WHERE id = $1`,
-        [userId]
-      );
+      const entitlement = await client.query("SELECT source,usage_period_start FROM entitlement_reservations WHERE id=$1 AND user_id=$2 FOR UPDATE",[reservation.id,userId]);
+      if (entitlement.rowCount && entitlement.rows[0].source === "subscription") {
+        await client.query("UPDATE entitlement_reservations SET status='released',completed_at=NOW() WHERE id=$1 AND status='reserved'",[reservation.id]);
+        await client.query(`UPDATE billing_usage_periods SET analyses_reserved=GREATEST(0,analyses_reserved-1),updated_at=NOW() WHERE user_id=$1 AND period_start=$2`,[userId,entitlement.rows[0].usage_period_start]);
+      } else {
+        await client.query(`UPDATE "user" SET analysis_trials_reserved=GREATEST(0,analysis_trials_reserved-1),updated_at=NOW() WHERE id=$1`,[userId]);
+      }
     }
     await client.query("COMMIT");
   } catch {
