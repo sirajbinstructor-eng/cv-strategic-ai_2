@@ -1,0 +1,6 @@
+import { z } from "zod";
+export const ADMIN_EMAILS = ["siraj.b.instructor@gmail.com","cvstrategistai@gmail.com"] as const;
+export const listSchema=z.object({q:z.string().trim().max(200).optional(),role:z.enum(["all","admin","user"]).default("all"),limit:z.coerce.number().int().min(1).max(100).default(50),offset:z.coerce.number().int().min(0).default(0)});
+export const createSchema=z.object({name:z.string().trim().min(1).max(120),email:z.string().trim().email().max(254).transform(v=>v.toLowerCase()),isAdmin:z.boolean().default(false),isUnrestricted:z.boolean().default(false),consultantEntitled:z.boolean().default(false),analysisTrialsGranted:z.number().int().min(0).max(10000).default(3)});
+export const updateSchema=z.object({name:z.string().trim().min(1).max(120).optional(),email:z.string().trim().email().max(254).transform(v=>v.toLowerCase()).optional(),emailVerified:z.boolean().optional(),isAdmin:z.boolean().optional(),isUnrestricted:z.boolean().optional(),consultantEntitled:z.boolean().optional(),analysisTrialsGranted:z.number().int().min(0).max(10000).optional()}).refine(v=>Object.keys(v).length>0);
+export type CreateInput=z.infer<typeof createSchema>;export type UpdateInput=z.infer<typeof updateSchema>;
