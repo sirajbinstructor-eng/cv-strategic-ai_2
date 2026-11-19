@@ -64,7 +64,7 @@ export function AnalysisWorkspace({ entitlements, onUpgrade }: { entitlements: E
           </form>
         </>
       )}
-      {result && <div className="analysis-result-wrap"><div className="success-strip">Analysis completed. {result.entitlements?.unlimited ? "Your account has unrestricted access." : result.entitlements ? `${result.entitlements.remaining ?? 0} free ${result.entitlements.remaining === 1 ? "analysis" : "analyses"} remaining.` : "Your trial status will refresh when your dashboard reloads."}</div><AnalysisResults analysis={result.analysis} sourceCvText={result.sourceCvText} jobDescription={result.jobDescription} contactDetails={result.source.contactDetails} /></div>}
+      {result && <div className="analysis-result-wrap"><div className="success-strip">Analysis completed. {result.entitlements?.unlimited ? "Your account has unrestricted access." : result.entitlements ? `${result.entitlements.remaining ?? 0} free ${result.entitlements.remaining === 1 ? "analysis" : "analyses"} remaining.` : "Your trial status will refresh when your dashboard reloads."}</div><AnalysisResults analysisId={result.analysisId} analysis={result.analysis} sourceCvText={result.sourceCvText} jobDescription={result.jobDescription} contactDetails={result.source.contactDetails} generationAllowed={Boolean(result.entitlements?.unlimited || result.entitlements?.used === 1)} onUpgrade={onUpgrade} /></div>}
     </section>
   );
 }
