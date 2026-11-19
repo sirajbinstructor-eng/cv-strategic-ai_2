@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/server-session";
 import { getEntitlements } from "@/lib/entitlements/trials";
+import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const session = await getCurrentSession();
   if (!session?.user?.id) return NextResponse.json({ authenticated: false }, { status: 401 });
+  await ensureAuthSchema();
   const entitlements = await getEntitlements(session.user.id);
   if (!entitlements) return NextResponse.json({ error: "Account not found." }, { status: 404 });
   return NextResponse.json({
