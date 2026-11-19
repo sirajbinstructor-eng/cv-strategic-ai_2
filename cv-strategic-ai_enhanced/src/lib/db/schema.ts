@@ -74,3 +74,35 @@ export const discountApplications = pgTable("discount_applications", {
 export type UserRecord = typeof user.$inferSelect;
 export type AnalysisRecord = typeof analysisRecords.$inferSelect;
 export type DiscountApplicationRecord = typeof discountApplications.$inferSelect;
+
+export const billingSubscriptions = pgTable("billing_subscriptions", {
+ id:text("id").primaryKey(),userId:text("user_id").notNull().references(()=>user.id,{onDelete:"cascade"}),
+ provider:text("provider").notNull().default("unselected"),providerSubscriptionId:text("provider_subscription_id"),
+ plan:text("plan",{enum:["pro","consultant"]}).notNull(),billingInterval:text("billing_interval",{enum:["monthly","annual"]}).notNull(),
+ currency:text("currency",{enum:["USD","EUR","TND"]}).notNull(),baseAmountMinor:integer("base_amount_minor").notNull(),
+ discountPercent:integer("discount_percent").notNull().default(0),amountMinor:integer("amount_minor").notNull(),
+ discountApplicationId:text("discount_application_id").references(()=>discountApplications.id,{onDelete:"set null"}),
+ status:text("status",{enum:["pending","active","past_due","canceled_at_period_end","expired","refunded","disputed"]}).notNull().default("pending"),
+ currentPeriodStart:timestamp("current_period_start",{withTimezone:true}),currentPeriodEnd:timestamp("current_period_end",{withTimezone:true}),
+ cancelAtPeriodEnd:boolean("cancel_at_period_end").notNull().default(false),canceledAt:timestamp("canceled_at",{withTimezone:true}),
+ createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),updatedAt:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow()
+},t=>({userStatus:index("billing_subscriptions_user_status_idx").on(t.userId,t.status),providerSubscriptionUnique:uniqueIndex("billing_provider_subscription_unique").on(t.provider,t.providerSubscriptionId),amountCheck:check("billing_subscription_amount_check",sql`${t.baseAmountMinor}>0 AND ${t.amountMinor}>=0 AND ${t.discountPercent} BETWEEN 0 AND 100`)}));
+export const billingUsagePeriods=pgTable("billing_usage_periods",{
+ id:text("id").primaryKey(),userId:text("user_id").notNull().references(()=>user.id,{onDelete:"cascade"}),
+ periodStart:timestamp("period_start",{withTimezone:true}).notNull(),periodEnd:timestamp("period_end",{withTimezone:true}).notNull(),
+ plan:text("plan",{enum:["pro","consultant"]}).notNull(),billingInterval:text("billing_interval",{enum:["monthly","annual"]}).notNull(),
+ analysesLimit:integer("analyses_limit").notNull(),analysesUsed:integer("analyses_used").notNull().default(0),analysesReserved:integer("analyses_reserved").notNull().default(0),
+ generationsLimit:integer("generations_limit").notNull(),generationsUsed:integer("generations_used").notNull().default(0),generationsReserved:integer("generations_reserved").notNull().default(0),
+ createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),updatedAt:timestamp("updated_at",{withTimezone:true}).notNull().defaultNow()
+},t=>({userPeriodUnique:uniqueIndex("billing_usage_user_period_unique").on(t.userId,t.periodStart),periodCheck:check("billing_usage_period_check",sql`${t.periodEnd}>${t.periodStart}`),counterCheck:check("billing_usage_counter_check",sql`${t.analysesUsed}>=0 AND ${t.analysesReserved}>=0 AND ${t.generationsUsed}>=0 AND ${t.generationsReserved}>=0 AND ${t.analysesUsed}+${t.analysesReserved}<=${t.analysesLimit} AND ${t.generationsUsed}+${t.generationsReserved}<=${t.generationsLimit}`)}));
+export const entitlementReservations=pgTable("entitlement_reservations",{
+ id:text("id").primaryKey(),userId:text("user_id").notNull().references(()=>user.id,{onDelete:"cascade"}),
+ feature:text("feature",{enum:["analysis","cv_generation"]}).notNull(),source:text("source",{enum:["free","subscription"]}).notNull(),
+ usagePeriodStart:timestamp("usage_period_start",{withTimezone:true}),status:text("status",{enum:["reserved","consumed","released"]}).notNull(),
+ createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),completedAt:timestamp("completed_at",{withTimezone:true})
+},t=>({userFeatureStatus:index("entitlement_reservations_user_feature_status_idx").on(t.userId,t.feature,t.source,t.status)}));
+export const billingEvents=pgTable("billing_events",{
+ id:text("id").primaryKey(),provider:text("provider").notNull(),providerEventId:text("provider_event_id").notNull(),eventType:text("event_type").notNull(),
+ processingStatus:text("processing_status",{enum:["received","processed","failed"]}).notNull().default("received"),errorCode:text("error_code"),
+ receivedAt:timestamp("received_at",{withTimezone:true}).notNull().defaultNow(),processedAt:timestamp("processed_at",{withTimezone:true})
+},t=>({providerEventUnique:uniqueIndex("billing_provider_event_unique").on(t.provider,t.providerEventId)}));
