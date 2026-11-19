@@ -22,7 +22,7 @@ export const auth=betterAuth({
  plugins:[emailOTP({otpLength:6,expiresIn:300,allowedAttempts:5,resendStrategy:"rotate",overrideDefaultEmailVerification:true,async sendVerificationOTP({email,otp,type}){await sendOtpEmail({to:email,otp,type});}})],
  socialProviders:{
   ...(googleConfigured?{google:{clientId:process.env.GOOGLE_CLIENT_ID!,clientSecret:process.env.GOOGLE_CLIENT_SECRET!,prompt:"select_account",requireEmailVerification:true}}:{}),
-  ...(microsoftConfigured?{microsoft:{clientId:process.env.MICROSOFT_CLIENT_ID!,clientSecret:process.env.MICROSOFT_CLIENT_SECRET!,tenantId:process.env.MICROSOFT_TENANT_ID||"common",prompt:"select_account"}}:{})
+  ...(microsoftConfigured?{microsoft:{clientId:process.env.MICROSOFT_CLIENT_ID!,clientSecret:process.env.MICROSOFT_CLIENT_SECRET!,tenantId:process.env.MICROSOFT_TENANT_ID||"common",prompt:"select_account",requireEmailVerification:true}}:{})
  },
  user:{additionalFields:{
   isAdmin:{type:"boolean",required:false,defaultValue:false,input:false},
