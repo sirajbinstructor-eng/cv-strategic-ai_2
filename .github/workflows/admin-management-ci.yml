@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: cv-strategic-ai_enhanced/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npx tsx --test tests/scoring.test.ts tests/admin-validation.test.ts
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript validation
+        run: npm run typecheck
+      - name: Unit tests
+        run: npx tsx --test tests/scoring.test.ts tests/admin-validation.test.ts
