@@ -57,14 +57,14 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
   const snapshot=toEntitlementSnapshot(result.rows[0]);
   const paid=await getBillingEntitlements(userId);
   if(!paid)return snapshot;
-  return {...snapshot,granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
+  return {...snapshot,consultantEntitled:paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
 }
 
 export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
-export async function reserveAnalysisTrial(userId: string): Promise<TrialReservation> {
-  const paidReservation = await reserveSubscriptionAnalysis(userId);
+export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "consultant" = "automatic"): Promise<TrialReservation> {
+  const paidReservation = await reserveSubscriptionAnalysis(userId, mode);
   if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
   const reservationId = randomUUID();
@@ -116,8 +116,8 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
       throw error;
     }
     await client.query(
-      `INSERT INTO analysis_usage (id, user_id, status, mode) VALUES ($1, $2, 'reserved', 'automatic')`,
-      [reservationId, userId]
+      `INSERT INTO analysis_usage (id, user_id, status, mode) VALUES ($1, $2, 'reserved', $3)`,
+      [reservationId, userId, mode]
     );
     await client.query("COMMIT");
     return { id: reservationId, bypassed: false, source: "trial" };
@@ -132,7 +132,7 @@ export async function reserveAnalysisTrial(userId: string): Promise<TrialReserva
 export async function completeAnalysisTrial(
   userId: string,
   reservation: TrialReservation,
-  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown> }
+  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "automatic" | "consultant" }
 ): Promise<void> {
   const client = await pool.connect();
   try {
@@ -159,8 +159,8 @@ export async function completeAnalysisTrial(
     }
     await client.query(
       `INSERT INTO analysis_records (id, user_id, mode, target_title, match_score, result)
-       VALUES ($1, $2, 'automatic', $3, $4, $5::jsonb)`,
-      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result)]
+       VALUES ($1, $2, $6, $3, $4, $5::jsonb)`,
+      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "automatic"]
     );
     await client.query("COMMIT");
   } catch (error) {
