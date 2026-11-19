@@ -15,8 +15,8 @@ export const applyDiscountSchema = z.object({
   professionalExperienceMonths: z.number().int().min(0).max(600).optional(),
   declarationAccepted: z.literal(true)
 }).superRefine((value, ctx) => {
-  if (!value.nationalityEvidenceType) {
-    ctx.addIssue({ code: "custom", path: ["nationalityEvidenceType"], message: "Select your Tunisian nationality evidence." });
+  if (value.nationality === "tunisian" && !value.nationalityEvidenceType) {
+    ctx.addIssue({ code: "custom", path: ["nationalityEvidenceType"], message: "Select your Tunisian nationality evidence (CIN, passport or driving licence)." });
   }
   if (value.category === "student" && !value.studentEvidenceType) {
     ctx.addIssue({ code: "custom", path: ["studentEvidenceType"], message: "Provide the type of current student evidence." });
