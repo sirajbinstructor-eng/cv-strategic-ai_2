@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition } from "react";
@@ -5,63 +6,537 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+
 import { authClient } from "@/lib/auth-client";
 
-type Props = { providers: { google: boolean; microsoft: boolean }; initialMode?: "signin" | "signup" };
+type Props = {
+  providers: {
+    google: boolean;
+    microsoft: boolean;
+  };
+  initialMode?: "signin" | "signup";
+};
+
 const schema = z.object({
   name: z.string().trim().max(100).optional(),
   email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(10, "Use at least 10 characters.").max(128)
+  password: z
+    .string()
+    .min(10, "Use at least 10 characters.")
+    .max(128)
 });
+
 type FormValues = z.infer<typeof schema>;
 
-export function AuthPanel({ providers, initialMode = "signup" }: Props) {
+function readableError(error: unknown, fallback: string): string {
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      message?: unknown;
+      statusText?: unknown;
+      code?: unknown;
+    };
+
+    if (
+      typeof candidate.message === "string" &&
+      candidate.message.trim()
+    ) {
+      return candidate.message;
+    }
+
+    if (
+      typeof candidate.statusText === "string" &&
+      candidate.statusText.trim()
+    ) {
+      return candidate.statusText;
+    }
+
+    if (
+      typeof candidate.code === "string" &&
+      candidate.code.trim()
+    ) {
+      return `Authentication error (${candidate.code}).`;
+    }
+  }
+
+  return fallback;
+}
+
+export function AuthPanel({
+  providers,
+  initialMode = "signup"
+}: Props) {
   const router = useRouter();
+
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
+  const [stage, setStage] = useState<"credentials" | "verify">(
+    "credentials"
+  );
+
   const [message, setMessage] = useState("");
+  const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+
   const [pending, startTransition] = useTransition();
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", password: "" } });
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: ""
+    }
+  });
+
+  const finishSignIn = async (
+    userEmail: string,
+    userPassword: string
+  ) => {
+    const result = await authClient.signIn.email({
+      email: userEmail,
+      password: userPassword,
+      callbackURL: "/dashboard"
+    });
+
+    if (result.error) {
+      setMessage(
+        readableError(
+          result.error,
+          "Email verified, but sign-in failed. Please sign in again."
+        )
+      );
+      setStage("credentials");
+      setMode("signin");
+      return;
+    }
+
+    router.replace("/dashboard");
+    router.refresh();
+  };
 
   const onSubmit = form.handleSubmit((values) => {
     setMessage("");
+
+    const normalizedEmail = values.email.trim().toLowerCase();
+    const normalizedName =
+      values.name?.trim() || normalizedEmail.split("@")[0];
+
+    setEmail(normalizedEmail);
+    setPassword(values.password);
+    setFullName(normalizedName);
+
     startTransition(async () => {
-      const result = mode === "signup"
-        ? await authClient.signUp.email({ name: values.name?.trim() || values.email.split("@")[0], email: values.email, password: values.password, callbackURL: "/dashboard" })
-        : await authClient.signIn.email({ email: values.email, password: values.password, callbackURL: "/dashboard" });
-      if (result.error) {
-        setMessage(result.error.message || "Authentication failed. Please try again.");
-        return;
+      try {
+        if (mode === "signup") {
+          const result = await authClient.signUp.email({
+            name: normalizedName,
+            email: normalizedEmail,
+            password: values.password,
+            callbackURL: "/dashboard"
+          });
+
+          if (result.error) {
+            setMessage(
+              readableError(
+                result.error,
+                "Could not create your account. Please try again."
+              )
+            );
+            return;
+          }
+
+          setOtp("");
+          setStage("verify");
+          setMessage(
+            "Your account has been created. Enter the six-digit code sent to your email address."
+          );
+          return;
+        }
+
+        const result = await authClient.signIn.email({
+          email: normalizedEmail,
+          password: values.password,
+          callbackURL: "/dashboard"
+        });
+
+        if (result.error) {
+          console.error(
+            "[auth-client] Email sign-in rejected:",
+            result.error
+          );
+
+          setMessage(
+            readableError(
+              result.error,
+              "Sign-in failed. Check your email and password."
+            )
+          );
+          return;
+        }
+
+        router.replace("/dashboard");
+        router.refresh();
+      } catch (error) {
+        console.error("[auth-client] Authentication request failed:", error);
+
+        setMessage(
+          readableError(
+            error,
+            "Could not reach the authentication service. Please try again."
+          )
+        );
       }
-      router.push("/dashboard");
-      router.refresh();
     });
   });
 
-  const socialSignIn = (provider: "google" | "microsoft") => {
+  const verifyOtp = () => {
+    setMessage("");
+
+    if (!/^\d{6}$/.test(otp)) {
+      setMessage("Enter the six-digit verification code.");
+      return;
+    }
+
     startTransition(async () => {
-      const result = await authClient.signIn.social({ provider, callbackURL: "/dashboard" });
-      if (result.error) setMessage(result.error.message || `Could not start ${provider} sign-in.`);
+      try {
+        const result = await authClient.emailOtp.verifyEmail({
+          email,
+          otp
+        });
+
+        if (result.error) {
+          setMessage(
+            readableError(
+              result.error,
+              "The code is invalid or expired. Request a new code and try again."
+            )
+          );
+          return;
+        }
+
+        await finishSignIn(email, password);
+      } catch (error) {
+        console.error("[auth-client] OTP verification failed:", error);
+
+        setMessage(
+          readableError(
+            error,
+            "Verification failed. Please try again."
+          )
+        );
+      }
     });
+  };
+
+  const resendOtp = () => {
+    setMessage("");
+
+    startTransition(async () => {
+      try {
+        const result =
+          await authClient.emailOtp.sendVerificationOtp({
+            email,
+            type: "email-verification"
+          });
+
+        if (result.error) {
+          setMessage(
+            readableError(
+              result.error,
+              "Could not resend the verification code."
+            )
+          );
+          return;
+        }
+
+        setOtp("");
+        setMessage("A new verification code has been sent.");
+      } catch (error) {
+        console.error("[auth-client] OTP resend failed:", error);
+
+        setMessage(
+          readableError(
+            error,
+            "Could not resend the verification code."
+          )
+        );
+      }
+    });
+  };
+
+  const socialSignIn = (provider: "google" | "microsoft") => {
+    setMessage("");
+
+    startTransition(async () => {
+      try {
+        const result = await authClient.signIn.social({
+          provider,
+          callbackURL: "/dashboard"
+        });
+
+        if (result.error) {
+          setMessage(
+            readableError(
+              result.error,
+              `Could not start ${provider} sign-in.`
+            )
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[auth-client] ${provider} OAuth request failed:`,
+          error
+        );
+
+        setMessage(
+          readableError(
+            error,
+            `Could not start ${provider} sign-in.`
+          )
+        );
+      }
+    });
+  };
+
+  const changeMode = (nextMode: "signin" | "signup") => {
+    setMode(nextMode);
+    setStage("credentials");
+    setMessage("");
+    setOtp("");
+    form.clearErrors();
   };
 
   return (
     <section className="auth-card">
-      <div className="auth-heading"><p className="eyebrow">YOUR CAREER WORKSPACE</p><h2>{mode === "signup" ? "Create your account" : "Welcome back."}</h2><p className="muted">{mode === "signup" ? "Start with three free AI analyses." : "Sign in to continue your CV strategy."}</p></div>
-      <div className="social-stack">
-        <button className="social-button" type="button" disabled={!providers.google || pending} onClick={() => socialSignIn("google")}><span className="google-g">G</span>Continue with Google</button>
-        <button className="social-button" type="button" disabled={!providers.microsoft || pending} onClick={() => socialSignIn("microsoft")}><span className="microsoft-mark"><i /><i /><i /><i /></span>Continue with Microsoft</button>
-      </div>
-      {(!providers.google || !providers.microsoft) && <p className="provider-note">Social sign-in buttons activate after OAuth credentials are configured.</p>}
-      <div className="auth-divider"><span>OR USE YOUR EMAIL</span></div>
-      <form className="auth-form" onSubmit={onSubmit} noValidate>
-        {mode === "signup" && <label>Full name<input autoComplete="name" placeholder="Your name" {...form.register("name")} /></label>}
-        <label>Email address<input type="email" autoComplete="email" placeholder="you@example.com" {...form.register("email")} />{form.formState.errors.email && <small className="field-error">{form.formState.errors.email.message}</small>}</label>
-        <label>Password<input type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} placeholder={mode === "signup" ? "At least 10 characters" : "Your password"} {...form.register("password")} />{form.formState.errors.password && <small className="field-error">{form.formState.errors.password.message}</small>}</label>
-        {message && <p className="form-message" role="alert">{message}</p>}
-        <button className="button-primary full-width" type="submit" disabled={pending}>{pending ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}<span aria-hidden="true">→</span></button>
-      </form>
-      <p className="auth-switch">{mode === "signup" ? "Already have an account?" : "New to CV Strategist AI?"} <button type="button" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setMessage(""); }}> {mode === "signup" ? "Sign in" : "Create an account"}</button></p>
-      <p className="auth-legal">By continuing, you agree to use evidence-based CV content. Never submit information you are not authorized to share.</p>
+      {stage === "credentials" ? (
+        <>
+          <div className="auth-heading">
+            <p className="eyebrow">YOUR CAREER WORKSPACE</p>
+            <h2>
+              {mode === "signup"
+                ? "Create your account"
+                : "Welcome back."}
+            </h2>
+            <p className="muted">
+              {mode === "signup"
+                ? "Start with three free AI analyses."
+                : "Sign in to continue your CV strategy."}
+            </p>
+          </div>
+
+          <div className="social-stack">
+            <button
+              className="social-button"
+              type="button"
+              disabled={!providers.google || pending}
+              onClick={() => socialSignIn("google")}
+            >
+              <span className="google-g">G</span>
+              Continue with Google
+            </button>
+
+            <button
+              className="social-button"
+              type="button"
+              disabled={!providers.microsoft || pending}
+              onClick={() => socialSignIn("microsoft")}
+            >
+              <span className="microsoft-mark">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+              Continue with Microsoft
+            </button>
+          </div>
+
+          {(!providers.google || !providers.microsoft) && (
+            <p className="provider-note">
+              Social sign-in is unavailable until the corresponding
+              OAuth client ID and client secret are configured.
+            </p>
+          )}
+
+          <div className="auth-divider">
+            <span>OR USE YOUR EMAIL</span>
+          </div>
+
+          <form
+            className="auth-form"
+            onSubmit={onSubmit}
+            noValidate
+          >
+            {mode === "signup" && (
+              <label>
+                Full name
+                <input
+                  autoComplete="name"
+                  placeholder="Your name"
+                  {...form.register("name")}
+                />
+                {form.formState.errors.name && (
+                  <small className="field-error">
+                    {form.formState.errors.name.message}
+                  </small>
+                )}
+              </label>
+            )}
+
+            <label>
+              Email address
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <small className="field-error">
+                  {form.formState.errors.email.message}
+                </small>
+              )}
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete={
+                  mode === "signup"
+                    ? "new-password"
+                    : "current-password"
+                }
+                placeholder={
+                  mode === "signup"
+                    ? "At least 10 characters"
+                    : "Your password"
+                }
+                {...form.register("password")}
+              />
+              {form.formState.errors.password && (
+                <small className="field-error">
+                  {form.formState.errors.password.message}
+                </small>
+              )}
+            </label>
+
+            {message && (
+              <p className="form-message" role="alert">
+                {message}
+              </p>
+            )}
+
+            <button
+              className="button-primary full-width"
+              type="submit"
+              disabled={pending}
+            >
+              {pending
+                ? "Please wait..."
+                : mode === "signup"
+                  ? "Create account"
+                  : "Sign in"}
+              <span aria-hidden="true">→</span>
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            {mode === "signup"
+              ? "Already have an account?"
+              : "New to CV Strategist AI?"}{" "}
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                changeMode(
+                  mode === "signup" ? "signin" : "signup"
+                )
+              }
+            >
+              {mode === "signup"
+                ? "Sign in"
+                : "Create an account"}
+            </button>
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="auth-heading">
+            <p className="eyebrow">EMAIL VERIFICATION</p>
+            <h2>Check your inbox.</h2>
+            <p className="muted">
+              We sent a six-digit verification code to:
+            </p>
+            <strong>{email}</strong>
+          </div>
+
+          <div className="auth-form">
+            <label>
+              Verification code
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="123456"
+                value={otp}
+                onChange={(event) =>
+                  setOtp(
+                    event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6)
+                  )
+                }
+              />
+            </label>
+
+            {message && (
+              <p className="form-message" role="alert">
+                {message}
+              </p>
+            )}
+
+            <button
+              className="button-primary full-width"
+              type="button"
+              disabled={pending || otp.length !== 6}
+              onClick={verifyOtp}
+            >
+              {pending ? "Verifying..." : "Verify email"}
+              <span aria-hidden="true">→</span>
+            </button>
+
+            <button
+              className="social-button"
+              type="button"
+              disabled={pending}
+              onClick={resendOtp}
+            >
+              Resend verification code
+            </button>
+
+            <button
+              className="auth-switch"
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setStage("credentials");
+                setMessage("");
+                setOtp("");
+              }}
+            >
+              Back to sign in
+            </button>
+          </div>
+        </>
+      )}
+
+      <p className="auth-legal">
+        By continuing, you agree to use evidence-based CV content.
+        Never submit information you are not authorized to share.
+      </p>
     </section>
   );
 }
