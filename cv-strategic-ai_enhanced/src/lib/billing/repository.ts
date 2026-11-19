@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@/lib/db";
+import type { Pool,PoolClient } from "pg";
 import type { BillingPlan,BillingInterval,BillingCurrency } from "./catalog";
 import type { SubscriptionStatus } from "./model";
 export class BillingRepository {
@@ -45,7 +46,7 @@ export class BillingRepository {
   return {subscriptions:rows.rows,total:Number(count.rows[0]?.total||0)};
  }
 
- async getActiveSubscription(userId:string,client=pool){
+ async getActiveSubscription(userId:string,client:Pool|PoolClient=pool){
   const r=await client.query(`SELECT * FROM billing_subscriptions WHERE user_id=$1 AND status IN ('active','canceled_at_period_end') AND current_period_start<=NOW() AND current_period_end>NOW() ORDER BY current_period_end DESC LIMIT 1`,[userId]);
   return r.rows[0]||null;
  }
