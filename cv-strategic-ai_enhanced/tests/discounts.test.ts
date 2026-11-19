@@ -1,0 +1,11 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { calculateDiscount } from "../src/lib/discounts/model";
+const now=new Date("2026-11-19T12:00:00.000Z");
+test("Tunisian students receive 40 percent",()=>assert.equal(calculateDiscount({category:"student",nationality:"tunisian"},now).percent,40));
+test("non-Tunisian students receive 20 percent",()=>assert.equal(calculateDiscount({category:"student",nationality:"non_tunisian"},now).percent,20));
+test("recent graduate within 12 months is eligible",()=>assert.equal(calculateDiscount({category:"recent_graduate",nationality:"tunisian",graduationDate:new Date("2026-02-01T00:00:00Z"),noWorkSinceGraduation:false},now).percent,40));
+test("24-month exception requires no work",()=>assert.equal(calculateDiscount({category:"recent_graduate",nationality:"non_tunisian",graduationDate:new Date("2025-01-01T00:00:00Z"),noWorkSinceGraduation:true},now).percent,20));
+test("recent graduate with work beyond 12 months is rejected",()=>assert.throws(()=>calculateDiscount({category:"recent_graduate",nationality:"tunisian",graduationDate:new Date("2025-01-01T00:00:00Z"),noWorkSinceGraduation:false},now),/within 12 months/));
+test("early career under 24 months receives 10 percent",()=>assert.equal(calculateDiscount({category:"early_career",nationality:"tunisian",professionalExperienceMonths:23},now).percent,10));
+test("24 months is not early-career eligible",()=>assert.throws(()=>calculateDiscount({category:"early_career",nationality:"non_tunisian",professionalExperienceMonths:24},now),/less than 24 months/));
