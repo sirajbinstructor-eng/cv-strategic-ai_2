@@ -63,9 +63,9 @@ export const auth = betterAuth({
     }
   },
   advanced: {
-    database: { generateId: "uuid" },
-    useSecureCookies: process.env.NODE_ENV === "production"
-  },
+  database: { generateId: () => crypto.randomUUID() },
+  useSecureCookies: process.env.NODE_ENV === "production"
+},
   rateLimit: {
     enabled: true,
     window: 60,
