@@ -46,8 +46,7 @@ async function bootstrap(): Promise<void> {
     )`,
     `CREATE INDEX IF NOT EXISTS discount_applications_user_status_idx ON discount_applications(user_id,status)`,
     `CREATE INDEX IF NOT EXISTS discount_applications_status_created_idx ON discount_applications(status,created_at)`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS discount_one_active_application_per_user ON discount_applications(user_id) WHERE status IN ('pending','approved')`
-
+    `CREATE UNIQUE INDEX IF NOT EXISTS discount_one_active_application_per_user ON discount_applications(user_id) WHERE status IN ('pending','approved')`,
     `CREATE TABLE IF NOT EXISTS billing_subscriptions (
       id text PRIMARY KEY,user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
       provider text NOT NULL DEFAULT 'unselected',provider_subscription_id text,
