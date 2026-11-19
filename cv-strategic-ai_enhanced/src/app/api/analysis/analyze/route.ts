@@ -47,11 +47,14 @@ export async function POST(request: NextRequest) {
     const jobDescription = cleanText(String(form.get("jobDescription") || ""));
     const mode = String(form.get("mode") || "automatic");
 
-    if (mode !== "automatic") {
-      return NextResponse.json(
-        { error: "Consultant mode requires a paid Consultant entitlement." },
-        { status: 403 }
-      );
+    if (mode !== "automatic" && mode !== "consultant") {
+      return NextResponse.json({ error: "Unsupported analysis mode." }, { status: 400 });
+    }
+    if (mode === "consultant") {
+      const currentEntitlements = await getEntitlements(userId);
+      if (!currentEntitlements || (!currentEntitlements.isAdmin && !currentEntitlements.isUnrestricted && currentEntitlements.subscription?.plan !== "consultant")) {
+        return NextResponse.json({ error: "Consultant mode requires an active Consultant subscription." }, { status: 403 });
+      }
     }
 
     if (!(file instanceof File)) {
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
     const cvText = await extractCvText(file);
 
     // Reserve atomically before spending on the AI request.
-    reservation = await reserveAnalysisTrial(userId);
+    reservation = await reserveAnalysisTrial(userId, mode as "automatic" | "consultant");
 
     const raw = await askGroqForJson<unknown>(
       ANALYSIS_SYSTEM_PROMPT,
@@ -96,7 +99,8 @@ export async function POST(request: NextRequest) {
       id: analysisId,
       targetTitle: analysis.targetTitle || null,
       matchScore: analysis.match.score,
-      result: analysis as unknown as Record<string, unknown>
+      result: analysis as unknown as Record<string, unknown>,
+      mode: mode as "automatic" | "consultant"
     });
 
     let entitlements = null;
