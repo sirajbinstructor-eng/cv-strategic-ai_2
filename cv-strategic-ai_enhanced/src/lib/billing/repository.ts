@@ -38,6 +38,13 @@ export class BillingRepository {
  async markEvent(id:string,status:"processed"|"failed",errorCode?:string){
   await pool.query("UPDATE billing_events SET processing_status=$2,error_code=$3,processed_at=NOW() WHERE id=$1",[id,status,errorCode?.slice(0,80)||null]);
  }
+ async listAdmin(limit=50,offset=0){
+  const count=await pool.query("SELECT COUNT(*)::int AS total FROM billing_subscriptions");
+  const rows=await pool.query(`SELECT b.id,b.user_id,u.name AS user_name,u.email AS user_email,b.provider,b.provider_subscription_id,b.plan,b.billing_interval,b.currency,b.base_amount_minor,b.discount_percent,b.amount_minor,b.status,b.current_period_start,b.current_period_end,b.cancel_at_period_end,b.created_at,b.updated_at
+   FROM billing_subscriptions b JOIN "user" u ON u.id=b.user_id ORDER BY b.created_at DESC LIMIT $1 OFFSET $2`,[limit,offset]);
+  return {subscriptions:rows.rows,total:Number(count.rows[0]?.total||0)};
+ }
+
  async getActiveSubscription(userId:string,client=pool){
   const r=await client.query(`SELECT * FROM billing_subscriptions WHERE user_id=$1 AND status IN ('active','canceled_at_period_end') AND current_period_start<=NOW() AND current_period_end>NOW() ORDER BY current_period_end DESC LIMIT 1`,[userId]);
   return r.rows[0]||null;
