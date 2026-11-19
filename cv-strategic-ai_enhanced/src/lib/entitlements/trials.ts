@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@/lib/db";
-import { reserveSubscriptionAnalysis } from "@/lib/billing/entitlements";
+import { reserveSubscriptionAnalysis, getBillingEntitlements } from "@/lib/billing/entitlements";
 
 // 31 Dec 2026, 23:59:59 Africa/Tunis (UTC+01:00) inclusive.
 export const TRIAL_EXPIRY_UTC = new Date("2026-12-31T23:00:00.000Z");
@@ -18,6 +18,7 @@ export type EntitlementSnapshot = {
   unlimited: boolean;
   workspaceLocked: boolean;
   expiresAt: string;
+  subscription?: { plan:string; interval:string; status:string; analyses:{limit:number;used:number;reserved:number;remaining:number}; generations:{limit:number;used:number;reserved:number;remaining:number}; periodEnd:string };
 };
 
 /** CV generation is a launch-trial benefit only after the user's first completed analysis. */
@@ -52,7 +53,11 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
        FROM "user" WHERE id = $1 LIMIT 1`,
     [userId]
   );
-  return result.rows[0] ? toEntitlementSnapshot(result.rows[0]) : null;
+  if (!result.rows[0]) return null;
+  const snapshot=toEntitlementSnapshot(result.rows[0]);
+  const paid=await getBillingEntitlements(userId);
+  if(!paid)return snapshot;
+  return {...snapshot,granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
 }
 
 export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
