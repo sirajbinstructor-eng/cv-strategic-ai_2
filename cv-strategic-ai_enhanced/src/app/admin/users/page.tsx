@@ -1,0 +1,1 @@
+import {AdminUsersClient} from "@/components/admin/admin-users-client";export default function UsersPage(){return <div className="dashboard-main"><section className="dashboard-welcome"><div><p className="eyebrow">ACCOUNT DIRECTORY</p><h1>User management.</h1></div></section><AdminUsersClient/></div>;}
