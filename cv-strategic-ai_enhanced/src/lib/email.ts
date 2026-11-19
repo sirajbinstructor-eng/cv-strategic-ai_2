@@ -1,5 +1,9 @@
 
-type OtpEmailType = "email-verification" | "sign-in" | "forget-password";
+type OtpEmailType =
+  | "email-verification"
+  | "sign-in"
+  | "forget-password"
+  | "change-email";
 
 type SendOtpEmailInput = {
   to: string;
@@ -76,7 +80,7 @@ export async function sendOtpEmail({
       );
     }
   } catch (cause) {
-    const error = cause as { name?: string; message?: string };
+    const error = cause as { name?: string };
 
     if (error.name === "AbortError") {
       throw new Error("The email service timed out. Please try again.");
