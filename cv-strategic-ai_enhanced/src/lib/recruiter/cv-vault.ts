@@ -30,3 +30,25 @@ export function decryptCvText(input: { ciphertext: string; iv: string; tag: stri
   decipher.setAuthTag(Buffer.from(input.tag, "base64"));
   return Buffer.concat([decipher.update(Buffer.from(input.ciphertext, "base64")), decipher.final()]).toString("utf8");
 }
+
+export function encryptSensitiveText(value: string): string {
+  return JSON.stringify({ version: 1, ...encryptCvText(value) });
+}
+
+export function decryptSensitiveText(value: string): string {
+  const envelope = JSON.parse(value) as { version?: number; ciphertext: string; iv: string; tag: string };
+  if (envelope.version !== 1) throw new Error("Unsupported encrypted recruiter data format.");
+  return decryptCvText(envelope);
+}
+
+export function encryptRecruiterPayload(value: unknown) {
+  return { encrypted: true, ...encryptCvText(JSON.stringify(value)) };
+}
+
+export function decryptRecruiterPayload<T>(value: unknown): T {
+  if (!value || typeof value !== "object" || !("encrypted" in value) || (value as {encrypted?:boolean}).encrypted !== true) {
+    return value as T;
+  }
+  const envelope=value as {ciphertext:string;iv:string;tag:string};
+  return JSON.parse(decryptCvText(envelope)) as T;
+}
