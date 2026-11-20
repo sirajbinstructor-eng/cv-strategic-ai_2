@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     await ensureAuthSchema();
     const quote = await service.quote(session.user.id, parsed.data);
     const subscription = await billingRepository.createPending(session.user.id, {
+      provider: "paddle",
       plan: parsed.data.plan,
       interval: parsed.data.interval,
       currency: parsed.data.currency,
