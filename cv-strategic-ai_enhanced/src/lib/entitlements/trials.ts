@@ -63,8 +63,8 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
 export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
-export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "consultant" = "automatic"): Promise<TrialReservation> {
-  const paidReservation = await reserveSubscriptionAnalysis(userId, mode);
+export async function reserveAnalysisTrial(userId: string, mode: "analysis" | "consulting" = "analysis"): Promise<TrialReservation> {
+  const paidReservation = await reserveSubscriptionAnalysis(userId, mode === "consulting" ? "consultant" : "automatic");
   if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
   const reservationId = randomUUID();
@@ -132,7 +132,7 @@ export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "
 export async function completeAnalysisTrial(
   userId: string,
   reservation: TrialReservation,
-  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "automatic" | "consultant" }
+  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "analysis" | "consulting" }
 ): Promise<void> {
   const client = await pool.connect();
   try {
@@ -160,7 +160,7 @@ export async function completeAnalysisTrial(
     await client.query(
       `INSERT INTO analysis_records (id, user_id, mode, target_title, match_score, result)
        VALUES ($1, $2, $6, $3, $4, $5::jsonb)`,
-      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "automatic"]
+      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "analysis"]
     );
     await client.query("COMMIT");
   } catch (error) {
