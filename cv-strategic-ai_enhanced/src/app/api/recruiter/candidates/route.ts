@@ -21,7 +21,9 @@ export async function GET(){
 export async function POST(request:NextRequest){
  try{
   const user=await requireUser();const access=await requireRecruiterAccess(user.id,true);
-  const form=await request.formData();const files=form.getAll("files").filter((v):v is File=>v instanceof File);
+  const form=await request.formData();
+  if(form.get("authorizationConfirmed")!=="true")return NextResponse.json({error:"Confirm that your organization is authorized to process these CVs before uploading."},{status:400});
+  const files=form.getAll("files").filter((v):v is File=>v instanceof File);
   if(!files.length)return NextResponse.json({error:"Choose at least one CV file."},{status:400});
   if(files.length>10)return NextResponse.json({error:"Upload no more than 10 CVs in one batch."},{status:400});
   // Validate the encryption configuration before reading or accepting candidate data.
