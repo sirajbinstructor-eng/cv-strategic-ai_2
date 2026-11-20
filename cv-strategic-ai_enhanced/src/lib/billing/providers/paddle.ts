@@ -111,6 +111,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     const body: PaddleJson = {
       items: [{ price_id: priceId, quantity: 1 }],
       collection_mode: "automatic",
+      enable_checkout: true,
       custom_data: {
         app_product: "candidate",
         app_subscription_id: input.referenceId,
