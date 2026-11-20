@@ -25,16 +25,17 @@ export function TrialStatus({ entitlements, onUpgrade }: { entitlements: Entitle
           expired: entitlements.expired
         });
 
-  const canUpgrade = !entitlements.unlimited
-    && !entitlements.subscription
-    && (entitlements.expired || (entitlements.workspaceLocked && entitlements.reserved === 0));
+  // Keep plan discovery available throughout the customer lifecycle.
+  // Active subscribers can still compare plans; unrestricted/admin accounts
+  // are excluded from commercial upsell messaging.
+  const canUpgrade = !entitlements.unlimited;
 
   return (
     <section className={`trial-status tone-${content.tone}`} aria-live="polite">
       <div className="trial-copy"><span className="trial-kicker">{entitlements.subscription ? "YOUR SUBSCRIPTION" : entitlements.unlimited ? "ACCOUNT ACCESS" : "YOUR LAUNCH OFFER"}</span><h2>{content.title}</h2><p>{content.body}</p></div>
       <div className="trial-action">
         {!entitlements.unlimited && !entitlements.subscription && !entitlements.expired && <span className="trial-count">{entitlements.remaining ?? 0} of {entitlements.granted} left</span>}
-        {canUpgrade && <button className="button-primary" type="button" onClick={onUpgrade}>Upgrade now for more! <span aria-hidden="true">→</span></button>}
+        {canUpgrade && <button className="button-primary" type="button" onClick={onUpgrade}>{entitlements.subscription ? "View plans & options" : entitlements.remaining === 0 || entitlements.expired ? "Upgrade now for more!" : "Explore Pro & Gold"} <span aria-hidden="true">→</span></button>}
         {entitlements.subscription && <span className="access-pill">{entitlements.subscription.plan === "consultant" ? "GOLD" : "PRO"}</span>}
         {entitlements.unlimited && <span className="access-pill">Unlimited</span>}
       </div>
