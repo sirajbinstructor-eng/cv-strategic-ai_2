@@ -19,7 +19,7 @@ const PROVIDER_METADATA: Record<PaymentProviderId, ProviderMetadata> = {
   konnect: { name:"Konnect", purposes:["one_time"], products:["candidate","recruiter"], requiredEnvironment:["KONNECT_API_KEY","KONNECT_WEBHOOK_SECRET"], approvalEnvironment:"BILLING_KONNECT_MERCHANT_APPROVED" },
   ipay: {
     name:"iPay (optional aggregator fallback)", purposes:["subscription","one_time"], products:["candidate","recruiter"],
-    requiredEnvironment:["IPAY_ORG_ID","IPAY_API_TOKEN"], approvalEnvironment:"BILLING_IPAY_MERCHANT_APPROVED",
+    requiredEnvironment:["IPAY_ORG_ID","IPAY_JWT"], approvalEnvironment:"BILLING_IPAY_MERCHANT_APPROVED",
     integrationNote:"Merchant documentation now confirms POST /api/admin/transactions/create-oneshot, customer/plan/subscription endpoints, invoice endpoints and transaction webhook payloads. It does not document webhook authentication/signatures, a trusted transaction-status lookup, or a retry guarantee; transaction.completed can also represent manually declared transfers/postal mandates. Never grant access from this event alone. JWT is generated in the merchant dashboard and documented as valid for one year. Adapter remains disabled until iPay supplies a verifiable callback/status contract."
   },
   clictopay: {
