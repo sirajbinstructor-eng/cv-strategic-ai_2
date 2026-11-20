@@ -49,6 +49,6 @@ export function decryptRecruiterPayload<T>(value: unknown): T {
   if (!value || typeof value !== "object" || !("encrypted" in value) || (value as {encrypted?:boolean}).encrypted !== true) {
     return value as T;
   }
-  const envelope=value as {ciphertext:string;iv:string;tag:string};
+  const envelope=value as unknown as {ciphertext:string;iv:string;tag:string};
   return JSON.parse(decryptCvText(envelope)) as T;
 }
