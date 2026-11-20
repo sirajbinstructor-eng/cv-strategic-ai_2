@@ -127,9 +127,12 @@ Do not give the `--unrestricted` flag to ordinary testers. To grant/revoke the u
 - Only successfully completed analyses consume trials.
 - Failed file extraction, validation or Groq requests do not consume a trial.
 - A trial slot is reserved before the Groq call and finalized only after a valid analysis is persisted. Abandoned reservations older than 20 minutes are released on the next reservation attempt.
-- At 1 used: “You have 2 free analyses remaining!”
-- At 2 used: “Just 1 free analysis left!”
-- At 3 used: “You've used all 3 free analyses! Your free launch offer has ended. But your CV improvement journey doesn't have to stop here. Upgrade now to unlock more AI-powered CV analyses, access advanced features and get the most out of CV Strategist AI. Your dashboard and account settings remain accessible.”
+- The default launch allocation is 3 analyses, but administrators can change the number of analyses remaining for an individual account at any time.
+- The admin user editor sets the user's **remaining** analyses directly; completed and in-progress analyses are preserved and the total grant is recalculated.
+- The launch-offer banner is generated from the current server-side entitlement values: granted, completed, reserved and remaining analyses. It never assumes a fixed quota of 3.
+- Examples: 10 remaining displays “Welcome! You have 10 free AI analyses.”; 1 remaining displays “Just 1 free analysis left!”; exhaustion displays the actual configured total (e.g. “You've used all 10 free analyses!”).
+- The analysis API exhaustion response also uses the account's current configured quota rather than a hardcoded number.
+- An open dashboard refreshes its account entitlements every 30 seconds and when the browser tab regains focus, so admin quota changes appear without signing out.
 - After exhaustion, the analysis workspace is blurred/locked; dashboard and account settings remain accessible. A completed third analysis remains visible in the current browser session so the user can finish reviewing/generating that CV. After leaving or refreshing, the locked workspace is shown.
 - Offer expiry is enforced by the server and database using the Tunisia local end-of-day boundary (2027-01-01 00:00:00 Africa/Tunis).
 - Admin and unrestricted users bypass the trial cap and expiry.
