@@ -88,7 +88,7 @@ export function AccountTypeOnboarding({
       <button
         type="button"
         className="button-primary"
-        disabled={save.isPending || (accountType === "recruiter" && workspaceName.trim().length < 2 && !initialAccountType)}
+        disabled={save.isPending || (accountType === "recruiter" && workspaceName.trim().length < 2 && !isAdmin)}
         onClick={() => save.mutate()}
       >
         {save.isPending ? "Opening your workspace…" : isAdmin ? "Continue to selected workspace →" : "Continue to my workspace →"}
