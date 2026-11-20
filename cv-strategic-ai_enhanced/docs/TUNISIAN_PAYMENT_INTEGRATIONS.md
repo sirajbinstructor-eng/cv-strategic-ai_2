@@ -6,25 +6,27 @@ Public marketing claims are not treated as merchant approval, a signed contract,
 
 ## Executive decision
 
-1. **iPay by Audasoft (ipay.tn) remains the first planned Tunisian integration**, as selected. Public pages now expose authentication, primary admin endpoints, the one-shot transaction endpoint and webhook event names. Detailed request/response schemas and the webhook trust contract remain in the authenticated merchant dashboard. Do not invent the transaction-creation body or grant access from an unauthenticated event.
-2. **Flouci is the strongest publicly documented direct fallback.** Its public developer docs provide hosted payment creation, HMAC-signed webhooks, server-side verification, test credentials and a refund endpoint. However, unattended recurring-payment API details are not fully public. Its payment-binding feature is partner-restricted and a binding charge requires a CVC, so it is not an unattended renewal mechanism.
-3. **Konnect is a documented one-time-payment candidate.** Public docs describe initiation, a payment_ref webhook followed by server-side payment-detail lookup, and sandbox endpoints. Do not use it for automatic subscriptions until the recurring profile/API contract is verified.
-4. **Direct ClicToPay/SMT and La Poste MPGS/D17 remain merchant-kit integrations.** Public merchant pages establish high-level flow, not exact API schemas, callback signatures, certification or settlement arrangements.
+1. **Direct Flouci is the first Tunisian implementation priority** for one-time TND payments because its public contract documents hosted payment creation, signed webhooks and server-side verification. Its public recurring API contract is incomplete, so it must not be used for automatic monthly/annual subscription renewals yet.
+2. **Direct ClicToPay/SMT and La Poste MPGS/D17 are the next strategic priorities**, subject to receiving the official merchant kits, bank/postal approval and certification. D17 must not be assumed to expose a public web checkout API.
+3. **iPay by Audasoft is an optional aggregator fallback**, not the default route. It may add a fee on top of the underlying gateway charge; show it only as a separately labelled fallback after its merchant cost and security contract are confirmed. The merchant documentation now confirms the one-shot endpoint and request/response fields, but its webhook trust/status contract remains insufficient for automatic entitlement grants.
+4. **Konnect is a documented one-time-payment candidate.** Its public developer docs provide hosted payment creation, HMAC-signed webhooks, server-side verification, test credentials and a refund endpoint. However, unattended recurring-payment API details are not fully public. Its payment-binding feature is partner-restricted and a binding charge requires a CVC, so it is not an unattended renewal mechanism.
+5. **Konnect is a documented one-time-payment candidate.** Public docs describe initiation, a payment_ref webhook followed by server-side payment-detail lookup, and sandbox endpoints. Do not use it for automatic subscriptions until the recurring profile/API contract is verified.
+6. **Paymee has an older public API guide** Public merchant pages establish high-level flow, not exact API schemas, callback signatures, certification or settlement arrangements.
 5. **Paymee has an older public API guide** with sandbox creation and a checksum callback. Its current merchant availability, security guidance, refunds and recurring capabilities must be re-confirmed.
 
 ## Provider capability matrix
 
 | Provider | Publicly documented | Recurring evidence | Safe status |
 |---|---|---|---|
-| iPay (Audasoft) | JWT + organisation header; one-shot endpoint; transaction callbacks | Public marketing describes plans/automatic debits; full contract dashboard-only | First priority; wait for merchant API pack |
-| Flouci | Hosted payment, signed v2 webhooks, verify-payment, test app, refunds | Binding flow partner-only; CVC required for each binding charge. Separate recurring API referenced but not publicly specified | Direct one-time fallback; subscription adapter blocked |
+| Flouci (direct) | Hosted one-time payment, HMAC-SHA256 v2 webhook, verify-payment, test app | Public recurring lifecycle incomplete; payment binding partner-only and CVC per charge | First implementation priority for one-time payments; subscriptions blocked |
+| ClicToPay / SMT (direct) | Bank-acquired hosted SPS redirect; exact merchant contract private | No public recurring API contract reviewed | Second direct priority; await bank/SMT merchant kit and certification |
+| La Poste MPGS / D17 (direct) | Official e-commerce kit and D17 merchant channels; exact API contract private | No public recurring API contract reviewed | Second direct priority; await official La Poste merchant kit; verify D17 web checkout availability |
+| iPay (Audasoft aggregator) | JWT + X-Org-Id, create-oneshot request/response, invoices and webhook payload documented in authenticated merchant pack | Plan/subscription endpoints exist; automatic debit and renewal semantics still need end-to-end confirmation | Optional fallback only; webhook authenticity/status verification unresolved |
 | Konnect | Initiation, API key, payment details lookup, GET webhook reference, sandbox | Recurring profile mentioned, but no full recurring API lifecycle in reviewed endpoints | One-time only after approval |
-| ClicToPay / SMT | Bank-acquired hosted SPS redirect and merchant-server response | No public recurring API contract reviewed | Wait for bank/SMT pack and certification |
-| La Poste MPGS / D17 | E-commerce kit, MPGS card acceptance, D17/TPE channels | No public recurring API contract reviewed | Wait for official merchant kit |
 | Paymee | Create payment, hosted gateway iframe, webhook checksum | No public recurring contract reviewed | Secondary one-time candidate; re-confirm current support |
 | Paddle | Existing app integration | Recurring SaaS subscription support | Existing international provider; separate merchant eligibility gates |
 
-## iPay by Audasoft — first integration
+## iPay by Audasoft — optional aggregator fallback
 
 Official sources:
 - https://www.ipay.tn/
@@ -59,7 +61,7 @@ The public developer page says full field definitions, curl examples and complet
 
 **Security:** transaction.completed is an event name, not proof of authenticity. Authenticate the callback, resolve the local intent, compare amount/currency/reference and use a server-side status lookup if available. If there is no cryptographically verifiable callback or trusted status query, do not grant paid access automatically.
 
-## Flouci — publicly documented direct fallback
+## Flouci — first direct one-time integration priority
 
 Official docs:
 - https://docs.flouci.com/introduction
@@ -110,7 +112,7 @@ Publicly confirmed:
 
 The integration planner describes a hosted payment profile for recurring payments, but the reviewed API endpoint docs do not specify the full recurring lifecycle. Keep candidate monthly/annual subscription checkout blocked until subscription creation, renewal, failure, cancellation and status contracts are supplied. Konnect may be evaluated for future one-time recruiter credit packs after those products are commercially defined.
 
-## ClicToPay / SMT
+## ClicToPay / SMT — direct integration priority
 
 STB's official merchant page confirms merchant eligibility for Tunisia-established STB merchants, redirect to the SPS payment server, and a payment response to the customer and merchant server. Merchant affiliation agreement and SMT tests are required before production.
 
@@ -118,7 +120,7 @@ Official merchant information: https://www.stb.com.tn/fr/entreprises/la-banque-a
 
 No public authoritative API schema, signature specification, status-query contract, test host or production credentials were found. Obtain these from the acquiring bank/SMT pack. Do not implement from unofficial old plugins or guessed register.do/status endpoints.
 
-## La Poste Tunisienne / MPGS / D17
+## La Poste Tunisienne / MPGS / D17 — direct integration priority
 
 Official e-commerce pack information: https://www.poste.tn/index_service.php?code_menu=9&code_sous_menu=13
 
@@ -151,13 +153,34 @@ The guide is dated 2022/2023. Re-confirm current service and merchant availabili
 10. Refunds, disputes, chargebacks, cancellations and failed renewals require explicit transitions and an auditable ledger.
 11. Keep providers disabled until legal merchant approval, payout destination, API credentials, sandbox, reconciliation and production sign-off.
 
+## iPay merchant documentation supplied by the account owner
+
+The authenticated merchant documentation supplied on 20 November 2026 confirms:
+- Base URL: https://api.ipay.tn.
+- Authentication headers: Authorization: Bearer <JWT> and X-Org-Id: <organisation UUID>. The JWT is generated in the admin interface and is documented as valid for one year. Do not commit the organisation UUID or token.
+- Customer endpoints: POST /api/admin/customers and PUT /api/admin/customers/:id.
+- Plan endpoints: POST /api/admin/plans, PUT /api/integration/plans/update and POST /api/admin/plans/:id/archive.
+- Subscription endpoint: POST /api/admin/subscriptions.
+- One-shot endpoint: POST /api/admin/transactions/create-oneshot. Required body fields: product_code, amount, currency, customer_name and customer_external_id; invoice_reference is optional. Response fields include id, payment_url, amount, currency and invoice_reference.
+- Invoice endpoints: GET /api/admin/invoices, GET /api/admin/invoices/:id and GET /api/admin/invoices/:id/pdf.
+- Webhook events: transaction.created, transaction.completed, transaction.expired and transaction.failed. The documented payload includes event type, timestamp and transaction data (id, status, product_id, customer_id, month, amount, currency and invoice_reference).
+- Webhook health endpoint: GET /api/admin/webhooks/health, optionally ?probe=true.
+
+### iPay production blockers from the supplied merchant documentation
+- It does not describe webhook signature/authentication headers or a cryptographic verification mechanism.
+- It does not document a trusted server-side transaction status/detail endpoint.
+- It says iPay does not retry webhook delivery after an error.
+- transaction.completed may represent an electronic payment, a manually declared bank transfer/postal mandate, or a dashboard status update. This is not sufficient proof of settled funds.
+- Therefore, do not grant subscription/credit entitlements from transaction.completed alone. Obtain written answers from iPay on callback authentication, status verification, manual payment distinction, retry/replay protection, refunds and sandbox.
+- The supplied document shows the merchant Org ID in its example; keep actual Org ID and JWT only in server-side deployment secrets/configuration, never in Git, frontend bundles, logs or chat.
+
 ## Next implementation sequence
 
-1. Obtain the iPay merchant dashboard API pack and sandbox credentials; implement iPay first after reviewing exact request, callback-authentication and status-query contracts.
-2. Prepare Flouci one-time TND integration only if desired as a direct alternative; keep subscription renewal blocked pending its recurring API contract.
-3. Prepare Konnect one-time integration for future credit packs; keep subscriptions blocked pending recurring API details.
-4. Implement direct ClicToPay after bank/SMT pack and test merchant access.
-5. Implement La Poste MPGS after its official merchant kit; treat D17 as a separate channel only if a supported merchant API is supplied.
+1. Implement and test direct Flouci hosted one-time checkout, signed webhook verification and server-side status confirmation for a product that has a defined one-time purchase model. Keep automatic recurring candidate subscriptions blocked until Flouci supplies its recurring API contract.
+2. Obtain the official ClicToPay/SMT merchant kit and bank certification; implement the direct hosted flow and status verification from those exact materials.
+3. Obtain the official La Poste MPGS merchant kit; implement its direct hosted flow. Treat D17 as a distinct channel only if La Poste confirms a supported web merchant API and provides its contract.
+4. Keep iPay as an optional, explicitly labelled aggregator fallback. Before implementing it, obtain cryptographic callback authentication or a trusted server-side verification route and confirm how manual transfer/mandate declarations are distinguished from settled electronic payments.
+5. Prepare Konnect one-time integration for future credit packs; keep subscriptions blocked pending recurring API details.
 6. Revisit Paymee after written confirmation of current service status and updated security documentation.
 
 Do not use docs.i-pay.io as iPay by Audasoft documentation; it is a different service with a different payment/settlement model.
