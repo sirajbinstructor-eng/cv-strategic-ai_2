@@ -29,7 +29,7 @@ export function canGenerateCv(entitlements: Pick<EntitlementSnapshot, "unlimited
 export function toEntitlementSnapshot(row: Record<string, unknown>): EntitlementSnapshot {
   const isAdmin = Boolean(row.is_admin);
   const isUnrestricted = Boolean(row.is_unrestricted);
-  const consultantEntitled = Boolean(row.consultant_entitled);
+  const consultantEntitled = Boolean(row.consultant_entitled) || Boolean(row.is_admin) || Boolean(row.is_unrestricted);
   const granted = Number(row.analysis_trials_granted ?? 3);
   const used = Number(row.analysis_trials_used ?? 0);
   const reserved = Number(row.analysis_trials_reserved ?? 0);
@@ -57,7 +57,7 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
   const snapshot=toEntitlementSnapshot(result.rows[0]);
   const paid=await getBillingEntitlements(userId);
   if(!paid)return snapshot;
-  return {...snapshot,consultantEntitled:paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
+  return {...snapshot,consultantEntitled:snapshot.isAdmin||snapshot.isUnrestricted||paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
 }
 
 export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
