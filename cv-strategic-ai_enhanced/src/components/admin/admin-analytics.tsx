@@ -58,7 +58,7 @@ function PlanDonut({ plans }: { plans: AdminPlanBreakdown[] }) {
   const consultantLength = total ? consultant / total * circumference : 0;
   return <div className="admin-plan-donut-layout">
     <div className="admin-donut-wrap">
-      <svg viewBox="0 0 120 120" role="img" aria-label={`Active subscriptions: ${pro} Pro and ${consultant} Consultant`}>
+      <svg viewBox="0 0 120 120" role="img" aria-label={`Active subscriptions: ${pro} Pro and ${consultant} Gold`}>
         <circle cx="60" cy="60" r="42" fill="none" stroke="#edf1f6" strokeWidth="13"/>
         {total > 0 && <>
           <circle cx="60" cy="60" r="42" fill="none" stroke="#4777c8" strokeWidth="13" strokeDasharray={`${proLength} ${circumference-proLength}`} transform="rotate(-90 60 60)"/>
@@ -70,7 +70,7 @@ function PlanDonut({ plans }: { plans: AdminPlanBreakdown[] }) {
     </div>
     <div className="admin-plan-legend">
       <div><i className="admin-legend-dot admin-legend-dot--pro"/><span>Pro</span><strong>{formatNumber(pro)}</strong></div>
-      <div><i className="admin-legend-dot admin-legend-dot--consultant"/><span>Consultant</span><strong>{formatNumber(consultant)}</strong></div>
+      <div><i className="admin-legend-dot admin-legend-dot--consultant"/><span>Gold</span><strong>{formatNumber(consultant)}</strong></div>
       {!total && <p>No active subscriptions yet. This chart will populate as verified subscriptions become active.</p>}
     </div>
   </div>;
