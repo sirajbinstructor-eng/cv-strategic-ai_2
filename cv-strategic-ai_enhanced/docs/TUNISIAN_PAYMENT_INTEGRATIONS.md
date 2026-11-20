@@ -6,13 +6,12 @@ Public marketing claims are not treated as merchant approval, a signed contract,
 
 ## Executive decision
 
-1. **Direct Flouci is the first Tunisian implementation priority** for one-time TND payments because its public contract documents hosted payment creation, signed webhooks and server-side verification. Its public recurring API contract is incomplete, so it must not be used for automatic monthly/annual subscription renewals yet.
-2. **Direct ClicToPay/SMT and La Poste MPGS/D17 are the next strategic priorities**, subject to receiving the official merchant kits, bank/postal approval and certification. D17 must not be assumed to expose a public web checkout API.
-3. **iPay by Audasoft is an optional aggregator fallback**, not the default route. It may add a fee on top of the underlying gateway charge; show it only as a separately labelled fallback after its merchant cost and security contract are confirmed. The merchant documentation now confirms the one-shot endpoint and request/response fields, but its webhook trust/status contract remains insufficient for automatic entitlement grants.
-4. **Konnect is a documented one-time-payment candidate.** Its public developer docs provide hosted payment creation, HMAC-signed webhooks, server-side verification, test credentials and a refund endpoint. However, unattended recurring-payment API details are not fully public. Its payment-binding feature is partner-restricted and a binding charge requires a CVC, so it is not an unattended renewal mechanism.
-5. **Konnect is a documented one-time-payment candidate.** Public docs describe initiation, a payment_ref webhook followed by server-side payment-detail lookup, and sandbox endpoints. Do not use it for automatic subscriptions until the recurring profile/API contract is verified.
-6. **Paymee has an older public API guide** Public merchant pages establish high-level flow, not exact API schemas, callback signatures, certification or settlement arrangements.
-5. **Paymee has an older public API guide** with sandbox creation and a checksum callback. Its current merchant availability, security guidance, refunds and recurring capabilities must be re-confirmed.
+1. **Direct Flouci is the first Tunisian integration priority for one-time TND payments.** Its public contract documents hosted payment creation, HMAC-SHA256 signed webhooks and server-side payment verification. Its complete automatic recurring lifecycle is not publicly documented, so this contract must not be used for automatic monthly/annual subscription renewals.
+2. **Direct ClicToPay / SMT is the next priority**, subject to acquiring-bank merchant onboarding, the official technical pack and SMT certification.
+3. **Direct La Poste MPGS is the following priority.** D17 is treated as a distinct payment channel and must not be assumed to expose a public web checkout API; La Poste must confirm merchant eligibility and provide the official kit.
+4. **iPay by Audasoft is an optional aggregator fallback, not the default route.** It may add a legitimate aggregator fee on top of underlying gateway charges. The authenticated merchant documentation supplied by the account owner now confirms the one-shot request/response, customer/plan/subscription and invoice endpoints, and webhook payload. However, it does not document webhook authentication/signatures or a trusted transaction-status lookup, and transaction.completed can include manually declared transfers/mandates. No automatic entitlement grant is allowed until these trust gaps are resolved.
+5. **Konnect is a later one-time-payment candidate.** Public docs describe initiation, payment_ref webhook lookup, server-side payment details and sandbox. Automatic subscriptions remain blocked until the recurring lifecycle is documented.
+6. **Paymee is a later alternative.** Its public API guide is older; current merchant availability, security, refunds and recurring capabilities must be reconfirmed.
 
 ## Provider capability matrix
 
@@ -36,30 +35,32 @@ Official sources:
 - https://www.ipay.tn/produits/webhooks-integrations
 - https://dashboard.ipay.tn/
 
-### Publicly confirmed
-- REST API authentication: Authorization: Bearer <JWT> and X-Org-Id: <organisation UUID>.
-- Public developer page says the JWT is generated in the admin interface and is valid for one year.
-- Listed endpoints: POST /api/admin/customers, POST /api/admin/plans, POST /api/admin/subscriptions, GET /api/admin/transactions and GET /api/admin/stats.
-- One-shot endpoint: POST /api/admin/transactions/create-oneshot; public page says it returns a payment link.
-- Webhook events: transaction.completed, transaction.created and transaction.failed.
-- Public event fields: id, status, product_id, customer_id, month, amount, currency and invoice_reference.
-- Webhooks are POST JSON, configurable by product/event; automatic retries and delivery history are advertised.
-- Public recurring page advertises plans, monthly recurring payments, billing dates and renewals.
+### Confirmed by the authenticated merchant documentation supplied by the account owner
 
-### Mandatory merchant-pack items before coding
-The public developer page says full field definitions, curl examples and complete use cases are available after merchant-dashboard login. Obtain:
-- Exact one-shot request body, response schema, API base URL and error model.
-- Whether invoice_reference can be supplied and how it maps to our local pending payment intent.
-- Whether Bearer JWT + X-Org-Id applies to every endpoint; token rotation/revocation rules.
-- Webhook authentication/signature algorithm, header/token format, timestamp/replay rules.
-- Server-side transaction status/detail endpoint and exact final states.
-- How to distinguish an actual settled electronic payment from a manually declared transfer/postal mandate or dashboard operator action.
-- Subscription create/renew/failure/cancel/pause/resume schemas and status lookup.
-- Refund/void/chargeback support and payout timing, currencies, fees and bank destination.
-- Sandbox, test accounts/cards, test webhook delivery and production activation.
-- Merchant eligibility and whether recurring auto-debits cover this SaaS product category.
+- API base URL: https://api.ipay.tn.
+- Authentication: Authorization: Bearer <JWT> and X-Org-Id: <organisation UUID>. The JWT is generated in the merchant admin interface and is documented as valid for one year. Actual Org ID and JWT are secrets/configuration and must never be committed or exposed to the browser.
+- Customer endpoints: POST /api/admin/customers and PUT /api/admin/customers/:id.
+- Plan endpoints: POST /api/admin/plans, PUT /api/integration/plans/update and POST /api/admin/plans/:id/archive.
+- Subscription endpoint: POST /api/admin/subscriptions.
+- One-shot payment endpoint: POST /api/admin/transactions/create-oneshot.
+- One-shot required body: product_code, amount, currency, customer_name and customer_external_id; invoice_reference is optional.
+- One-shot response: id, payment_url, amount, currency and invoice_reference.
+- Invoice endpoints: GET /api/admin/invoices, GET /api/admin/invoices/:id and GET /api/admin/invoices/:id/pdf.
+- Webhook events: transaction.created, transaction.completed, transaction.expired and transaction.failed. Payload includes type, timestamp and data fields id, status, product_id, customer_id, month, amount, currency and invoice_reference.
+- Webhook health: GET /api/admin/webhooks/health, optionally with probe=true.
 
-**Security:** transaction.completed is an event name, not proof of authenticity. Authenticate the callback, resolve the local intent, compare amount/currency/reference and use a server-side status lookup if available. If there is no cryptographically verifiable callback or trusted status query, do not grant paid access automatically.
+### iPay production blockers
+
+- The supplied documentation does **not** describe webhook signature/authentication headers or a cryptographic callback verification method.
+- It does **not** document a trusted server-side transaction status/detail endpoint. The invoice endpoints are not a substitute for a transaction verification endpoint unless iPay confirms their semantics and lookup guarantees.
+- It explicitly says iPay does **not retry webhook delivery** after an error. Our endpoint would therefore need durable event intake and queueing before returning 200; delivery recovery cannot depend on provider retries.
+- transaction.completed means payment validated but may represent an electronic payment, a manually declared bank transfer/postal mandate, or a dashboard status update. It is not sufficient proof of electronically settled funds.
+- Obtain written answers on callback authentication, transaction verification, manual-vs-electronic settlement distinction, replay protection, refunds/chargebacks, sandbox and production activation.
+- Until those questions are resolved, keep iPay disabled and do not grant subscriptions or credits from its webhook alone.
+
+### Cost and routing policy
+
+iPay is not the preferred route when a direct integration offers the same payment method at a lower total merchant cost. Compare the actual written merchant fees, gateway fees, settlement charges and payout terms. Show iPay only as a separately selected optional fallback; never silently reroute a failed direct payment through it.
 
 ## Flouci — first direct one-time integration priority
 
