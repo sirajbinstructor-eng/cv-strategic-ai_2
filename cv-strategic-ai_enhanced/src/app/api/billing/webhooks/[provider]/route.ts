@@ -189,7 +189,7 @@ export async function POST(request: NextRequest, context: Context) {
         else await processRenewalTransactionPaid(data);
       } else if (event.rawType.startsWith("subscription.")) {
         await processSubscriptionEvent(event.rawType,data,typeof data.transaction_id === "string" ? data.transaction_id : undefined);
-      } else if (event.rawType === "transaction.payment_failed" || event.rawType === "transaction.past_due") {
+      } else if (event.rawType === "transaction.payment_failed" || event.rawType === "transaction.past_due" || event.rawType === "transaction.canceled") {
         const transactionId = typeof data.id === "string" ? data.id : "";
         const payment = await findPaddlePaymentByTransaction(transactionId);
         if (payment) {
