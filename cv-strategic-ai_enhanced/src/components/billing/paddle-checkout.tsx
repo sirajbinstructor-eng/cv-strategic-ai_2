@@ -43,6 +43,7 @@ export function PaddleCheckout({ transactionId, clientToken, environment }: {
           if (active && ["expired","refunded","disputed"].includes(result.subscriptionStatus)) {
             setStatus("The payment did not activate this subscription. Please contact support before trying again.");
             setConfirmationTimedOut(true);
+            active = false;
             return;
           }
         }
@@ -54,6 +55,7 @@ export function PaddleCheckout({ transactionId, clientToken, environment }: {
       if (active && attempts >= 30) {
         setConfirmationTimedOut(true);
         setStatus("Paddle reported checkout completion, but confirmation is still pending. You can check your dashboard again shortly.");
+        active = false;
       }
     };
     void checkStatus();
