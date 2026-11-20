@@ -9,11 +9,11 @@ export class BillingRepository {
    FROM billing_subscriptions WHERE user_id=$1 AND (status IN ('active','past_due','canceled_at_period_end') OR (status='pending' AND created_at>NOW()-INTERVAL '30 minutes')) ORDER BY created_at DESC LIMIT 1`,[userId]);
   return r.rows[0]||null;
  }
- async createPending(userId:string,quote:{plan:BillingPlan;interval:BillingInterval;currency:BillingCurrency;baseAmountMinor:number;discountPercent:number;amountMinor:number;discountApplicationId:string|null}){
+ async createPending(userId:string,quote:{plan:BillingPlan;interval:BillingInterval;currency:BillingCurrency;baseAmountMinor:number;discountPercent:number;amountMinor:number;discountApplicationId:string|null;provider?:"paddle"|"unselected"}){
   const id=randomUUID();
   const r=await pool.query(`INSERT INTO billing_subscriptions(id,user_id,provider,plan,billing_interval,currency,base_amount_minor,discount_percent,amount_minor,status,discount_application_id)
-   VALUES($1,$2,'unselected',$3,$4,$5,$6,$7,$8,'pending',$9) RETURNING *`,
-   [id,userId,quote.plan,quote.interval,quote.currency,quote.baseAmountMinor,quote.discountPercent,quote.amountMinor,quote.discountApplicationId]);
+   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10) RETURNING *`,
+   [id,userId,quote.provider || 'unselected',quote.plan,quote.interval,quote.currency,quote.baseAmountMinor,quote.discountPercent,quote.amountMinor,quote.discountApplicationId]);
   return r.rows[0];
  }
  async activateVerified(input:{id:string;provider:"paddle"|"konnect"|"paymaster"|"manual";providerSubscriptionId:string;periodStart:Date;periodEnd:Date;status:SubscriptionStatus}){
