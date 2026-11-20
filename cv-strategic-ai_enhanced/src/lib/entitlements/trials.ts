@@ -112,8 +112,10 @@ export async function reserveAnalysisTrial(userId: string, mode: "analysis" | "c
       const granted = entitlements?.granted ?? 0;
       const used = entitlements?.used ?? 0;
       const reserved = entitlements?.reserved ?? 0;
-      const exhaustedMessage = used >= granted
-        ? `You have used all ${granted} free ${granted === 1 ? "analysis" : "analyses"}. Upgrade now for more!`
+      const exhaustedMessage = granted === 0
+        ? "No free analyses have been assigned to your account. Please contact your administrator or view the available plans."
+        : used >= granted
+          ? `You have used all ${granted} free ${granted === 1 ? "analysis" : "analyses"}. Upgrade now for more!`
         : `All remaining free analysis slots are currently in use (${used} completed, ${reserved} in progress, out of ${granted} granted). Please wait for processing to finish or upgrade for more.`;
       const error = new Error(entitlements?.expired
         ? "The free launch offer expired on 31 December 2026. Upgrade to continue."
