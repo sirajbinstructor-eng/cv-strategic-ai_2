@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 type Job={id:string;title:string;department:string|null;location:string|null;employment_type:string|null;status:string;created_at:string};
 type Candidate={id:string;original_filename:string;content_type:string;text_length:number;created_at:string;retention_expires_at:string};
@@ -54,7 +55,7 @@ export function RecruiterWorkspaceClient(){
  const premiumAvailable=Boolean(workspace?.permissions.premiumBatchMatchingEnabled);
  const canRun=pairs.length>0&&pairs.length<=50&&creditsAvailable&&(!premiumRequired||premiumAvailable)&&!busy;
 
- async function createJob(event:React.FormEvent<HTMLFormElement>){
+ async function createJob(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setBusy("job");setError("");setNotice("");
   try{await api("/api/recruiter/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:jobTitle,department,location,employmentType,description,status:"open"})});
    setJobTitle("");setDepartment("");setLocation("");setDescription("");setNotice("Job description published.");await refresh();
@@ -83,7 +84,7 @@ export function RecruiterWorkspaceClient(){
    setNotice(`Evaluation completed: ${result.credits.consumed} credit(s) consumed; ${result.credits.released} returned after failed assessments.`);setTab("history");setExpandedBatch(result.batch.id);await refresh();
   }catch(e){setError(e instanceof Error?e.message:"Unable to run evaluation.");}finally{setBusy("");}
  }
- function toggle(setter:React.Dispatch<React.SetStateAction<string[]>>,id:string,limit:number,current:string[]){
+ function toggle(setter:Dispatch<SetStateAction<string[]>>,id:string,limit:number,current:string[]){
   if(current.includes(id))setter(current.filter(value=>value!==id));
   else if(current.length<limit)setter([...current,id]);
   else setError(`You can select up to ${limit} items.`);
