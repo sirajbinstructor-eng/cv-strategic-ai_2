@@ -10,6 +10,6 @@ export async function GET() {
   return NextResponse.json({
     providers,
     checkoutAvailable: providers.some((provider) => provider.checkoutAvailable),
-    note: "Paddle sandbox checkout is restricted to controlled integration tests. Live customer checkout remains unavailable until merchant approval, complete credentials, sandbox verification and explicit live enablement are in place."
+    note: "Provider readiness is informational only. A provider is selectable only when its adapter, merchant approval, credentials and required verification are complete. Tunisian providers remain unavailable until their official merchant API contracts and sandbox tests are verified."
   }, { headers: { "Cache-Control": "no-store" } });
 }

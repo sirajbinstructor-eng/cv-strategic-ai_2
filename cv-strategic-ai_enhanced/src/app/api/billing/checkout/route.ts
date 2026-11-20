@@ -32,6 +32,9 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   let body: unknown;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid JSON." }, { status: 400 }); }
+  if (body && typeof body === "object" && "provider" in body && (body as { provider?: unknown }).provider !== "paddle") {
+    return NextResponse.json({ error: "The requested payment provider is not available for checkout. No payment has been created." }, { status: 503 });
+  }
   const parsed = checkoutRequestSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid plan, interval or currency." }, { status: 400 });
 
