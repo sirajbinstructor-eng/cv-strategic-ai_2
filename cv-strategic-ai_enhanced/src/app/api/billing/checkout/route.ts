@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Paddle's public client token is not configured." }, { status: 503 });
   }
 
+  let pendingSubscriptionId: string | undefined;
   try {
     await ensureAuthSchema();
     const quote = await service.quote(session.user.id, parsed.data);
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       amountMinor: quote.price.amountMinor,
       discountApplicationId: quote.discountApplicationId
     });
+    pendingSubscriptionId = String(subscription.id);
     const suppliedKey = request.headers.get("Idempotency-Key")?.trim() || "";
     const idempotencyKey = /^[0-9a-f-]{36}$/i.test(suppliedKey) ? suppliedKey : randomUUID();
     const origin = appOrigin();
@@ -94,6 +96,7 @@ export async function POST(request: NextRequest) {
       message: "Continue to Paddle's secure checkout. Your subscription activates only after a verified payment notification."
     }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (pendingSubscriptionId) await billingRepository.updateStatus(pendingSubscriptionId, "expired").catch(() => undefined);
     const e = error as { message?: string; status?: number };
     return NextResponse.json({ error: e.message || "Unable to create Paddle checkout." }, { status: e.status || 500 });
   }
