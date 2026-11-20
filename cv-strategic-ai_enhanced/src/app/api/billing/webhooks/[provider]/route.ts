@@ -12,7 +12,7 @@ const adapter = new PaddleAdapter();
 const billingRepository = new BillingRepository();
 
 function validDate(value: unknown): Date | null {
-  if (typeof value !== "string") return null;
+  if (!(typeof value === "string" || value instanceof Date)) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest, context: Context) {
         const payment = await findPaddlePaymentByTransaction(transactionId);
         if (payment) {
           await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE provider='paddle' AND provider_transaction_id=$1 AND status='pending'", [transactionId]);
-          await pool.query("UPDATE billing_subscriptions SET status='past_due',updated_at=NOW() WHERE id=$1 AND status IN ('pending','active')", [payment.reference_id]);
+          await pool.query("UPDATE billing_subscriptions SET status=CASE WHEN status='pending' THEN 'expired' ELSE 'past_due' END,updated_at=NOW() WHERE id=$1 AND status IN ('pending','active')", [payment.reference_id]);
         }
       }
       if (eventRecordId) await billingRepository.markEvent(eventRecordId, "processed");
