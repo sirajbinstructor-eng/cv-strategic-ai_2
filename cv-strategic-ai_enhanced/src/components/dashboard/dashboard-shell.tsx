@@ -14,7 +14,7 @@ type AccountPayload = {
   user: { id: string; name: string; email: string; image?: string | null; accountType: "job_seeker" | "recruiter" | null };
   entitlements: {
     isAdmin: boolean; isUnrestricted: boolean; consultantEntitled: boolean;
-    granted: number; used: number; remaining: number | null; expired: boolean;
+    granted: number; used: number; reserved: number; remaining: number | null; expired: boolean;
     unlimited: boolean; workspaceLocked: boolean; expiresAt: string;
     subscription?: { plan:string; interval:string; status:string; analyses:{limit:number;used:number;reserved:number;remaining:number}; generations:{limit:number;used:number;reserved:number;remaining:number}; periodEnd:string };
   };
@@ -30,7 +30,10 @@ export function DashboardShell() {
       const response = await fetch("/api/account", { cache: "no-store" });
       if (!response.ok) throw new Error("Unable to load your account.");
       return response.json() as Promise<AccountPayload>;
-    }
+    },
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
 
   async function signOut() {
