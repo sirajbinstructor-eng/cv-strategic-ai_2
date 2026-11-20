@@ -10,7 +10,8 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ authenticated: false }, { status: 401 });
   await ensureAuthSchema();
   const { pool } = await import("@/lib/db");
-  const profile = await pool.query('SELECT account_type FROM "user" WHERE id=$1',[session.user.id]);\n  const entitlements = await getEntitlements(session.user.id);
+  const profile = await pool.query('SELECT account_type FROM "user" WHERE id=$1',[session.user.id]);
+  const entitlements = await getEntitlements(session.user.id);
   if (!entitlements) return NextResponse.json({ error: "Account not found." }, { status: 404 });
   return NextResponse.json({
     authenticated: true,
