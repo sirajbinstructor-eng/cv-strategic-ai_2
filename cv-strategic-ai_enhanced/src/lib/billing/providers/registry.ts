@@ -1,6 +1,6 @@
 import { PAYMENT_PROVIDER_IDS, type PaymentProviderId, type PaymentProviderReadiness, type PaymentPurpose, type BillingProduct } from "./types";
 const PROVIDER_METADATA: Record<PaymentProviderId, {name:string;purposes:PaymentPurpose[];products:BillingProduct[];requiredEnvironment:string[];approvalEnvironment:string}> = {
-  paddle: {name:"Paddle",purposes:["subscription"],products:["candidate"],requiredEnvironment:["PADDLE_API_KEY","PADDLE_WEBHOOK_SECRET","NEXT_PUBLIC_PADDLE_CLIENT_TOKEN"],approvalEnvironment:"BILLING_PADDLE_MERCHANT_APPROVED"},
+  paddle: {name:"Paddle",purposes:["subscription"],products:["candidate"],requiredEnvironment:["PADDLE_API_KEY","PADDLE_WEBHOOK_SECRET","NEXT_PUBLIC_PADDLE_CLIENT_TOKEN","PADDLE_PRICE_PRO_MONTHLY_USD","PADDLE_PRICE_PRO_ANNUAL_USD","PADDLE_PRICE_PRO_MONTHLY_EUR","PADDLE_PRICE_PRO_ANNUAL_EUR","PADDLE_PRICE_CONSULTANT_MONTHLY_USD","PADDLE_PRICE_CONSULTANT_ANNUAL_USD","PADDLE_PRICE_CONSULTANT_MONTHLY_EUR","PADDLE_PRICE_CONSULTANT_ANNUAL_EUR","PADDLE_DISCOUNT_10_ID","PADDLE_DISCOUNT_20_ID","PADDLE_DISCOUNT_40_ID"],approvalEnvironment:"BILLING_PADDLE_MERCHANT_APPROVED"},
   flouci: {name:"Flouci",purposes:["subscription","one_time"],products:["candidate","recruiter"],requiredEnvironment:["FLOUCI_APP_TOKEN","FLOUCI_APP_SECRET","FLOUCI_WEBHOOK_SECRET"],approvalEnvironment:"BILLING_FLOUCI_MERCHANT_APPROVED"},
   konnect: {name:"Konnect",purposes:["one_time"],products:["candidate","recruiter"],requiredEnvironment:["KONNECT_API_KEY","KONNECT_WEBHOOK_SECRET"],approvalEnvironment:"BILLING_KONNECT_MERCHANT_APPROVED"},
   ipay: {name:"iPay",purposes:["subscription","one_time"],products:["candidate","recruiter"],requiredEnvironment:["IPAY_API_KEY","IPAY_WEBHOOK_SECRET"],approvalEnvironment:"BILLING_IPAY_MERCHANT_APPROVED"},
@@ -18,6 +18,7 @@ export function getPaymentProviderReadiness(): PaymentProviderReadiness[] {
     if(!enabled){status="disabled";reasons.push("Provider is disabled by default. Explicit enablement is required.");}
     else if(missing.length){status="credentials_missing";reasons.push("Required provider credentials are not completely configured.");}
     else if(!IMPLEMENTED_ADAPTERS.has(id)){status="adapter_not_implemented";reasons.push("The provider adapter has not been implemented and verified.");}
+    else if(id==="paddle"&&(process.env.PADDLE_ENVIRONMENT||"sandbox")==="sandbox"){status="sandbox_testing";reasons.push("Paddle sandbox checkout is available only for controlled integration tests; customer live checkout is not enabled.");}
     else if(id==="paddle"&&process.env.PADDLE_ENVIRONMENT!=="sandbox"&&!approved){status="merchant_approval_required";reasons.push("Paddle live merchant onboarding must be approved before live checkout.");}
     else if(id==="paddle"&&process.env.PADDLE_ENVIRONMENT==="live"&&process.env.BILLING_PADDLE_SANDBOX_VERIFIED!=="true"){status="sandbox_verification_required";reasons.push("Complete Paddle sandbox checkout and webhook verification before live checkout.");}
     else {status="ready";}
