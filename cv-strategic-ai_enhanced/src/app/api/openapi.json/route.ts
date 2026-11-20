@@ -15,6 +15,10 @@ const spec={
    get:{summary:"Get user details",responses:{"200":{description:"User details"},"404":{description:"Not found"}}},
    patch:{summary:"Update user profile and entitlements",requestBody:{required:true,content:{"application/json":{schema:{type:"object",properties:{name:{type:"string"},email:{type:"string",format:"email"},emailVerified:{type:"boolean"},isAdmin:{type:"boolean"},isUnrestricted:{type:"boolean"},consultantEntitled:{type:"boolean"},analysisTrialsGranted:{type:"integer",minimum:0,maximum:10000}}}}}},responses:{"200":{description:"Updated user"},"400":{description:"Invalid payload"},"409":{description:"Protected operation"}}},
    delete:{summary:"Delete user and cascading account data",responses:{"204":{description:"Deleted"},"404":{description:"Not found"},"409":{description:"Self-delete, reserved identity or last administrator"}}}
+  },
+  "/api/admin/recruiter-workspaces/{id}/credits":{
+   parameters:[{name:"id",in:"path",required:true,schema:{type:"string"}}],
+   post:{summary:"Grant recruiter workspace evaluation credits",description:"Administrator-only audited adjustment. Use this for support/testing; production credits should be granted by verified billing events.",requestBody:{required:true,content:{"application/json":{schema:{type:"object",required:["amount","reason"],properties:{amount:{type:"integer",minimum:1,maximum:100000},bucket:{type:"string",enum:["included","purchased"],default:"included"},reason:{type:"string",minLength:5,maxLength:300},idempotencyKey:{type:"string"}}}}}},responses:{"201":{description:"Credit adjustment applied"},"400":{description:"Invalid request"},"403":{description:"Administrator required"},"404":{description:"Workspace not found"},"409":{description:"Idempotency conflict"}}}
   }
  }
 };
