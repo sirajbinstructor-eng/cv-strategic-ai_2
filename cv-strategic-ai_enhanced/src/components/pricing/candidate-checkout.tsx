@@ -20,7 +20,7 @@ const METHOD_DETAILS: Record<string, { title: string; detail: string; region: st
   paddle: { title: "International cards", detail: "Secure hosted checkout for supported international currencies.", region: "USD · EUR", icon: "card" },
   ipay: { title: "iPay — optional aggregator", detail: "Alternative single checkout for supported local methods. May add an aggregator fee to the underlying payment cost.", region: "Tunisia · TND · fallback", icon: "local" },
   clictopay: { title: "ClicToPay / SMT", detail: "Direct bank-acquired card checkout for eligible Tunisian merchants.", region: "Tunisia · TND", icon: "bank" },
-  laposte_d17: { title: "La Poste / e-Dinar / D17", detail: "Direct postal and wallet payment integration, subject to merchant API eligibility.", region: "Tunisia · TND", icon: "wallet" },
+  laposte_d17: { title: "La Poste MPGS / e-Dinar", detail: "Direct postal payment integration. D17 web checkout will be offered only if La Poste confirms a supported merchant API.", region: "Tunisia · TND · direct", icon: "wallet" },
   flouci: { title: "Flouci — direct", detail: "Direct hosted wallet/card payment, subject to merchant onboarding. Automatic subscription renewal requires a separately verified recurring contract.", region: "Tunisia · TND · direct", icon: "wallet" },
   konnect: { title: "Konnect", detail: "Local payment gateway, subject to current merchant eligibility.", region: "Tunisia · TND", icon: "card" },
   paymee: { title: "Paymee", detail: "Local card checkout, subject to current merchant eligibility.", region: "Tunisia · TND", icon: "card" },
@@ -118,7 +118,7 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
         <div>
           <p style={styles.eyebrow}>SECURE CHECKOUT</p>
           <h3 id={`checkout-title-${plan}`} style={styles.title}>Get started with {plan === "pro" ? "Pro" : "Consultant"}</h3>
-          <p style={styles.muted}>Choose your billing preference. We'll show only payment methods that are actually ready for checkout.</p>
+          <p style={styles.muted}>Choose your billing preference. We'll clearly distinguish available payment methods from those still being onboarded.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, color: "var(--muted, #64748b)", fontSize: 11, fontWeight: 650 }}>
           <span aria-hidden="true">▣</span> Secure payment · No card details stored here
