@@ -74,7 +74,8 @@ export function PaddleCheckout({ transactionId, clientToken, environment }: {
             setCheckoutCompleted(true);
             setStatus("Payment submitted. Waiting for Paddle's signed confirmation…");
           } else if (event.name === "checkout.closed") {
-            setStatus("Checkout closed. If you completed payment, we will activate your subscription after Paddle confirms it.");
+            setCheckoutCompleted(true);
+            setStatus("Checkout closed. Checking whether a payment was completed…");
           }
         }
       });
