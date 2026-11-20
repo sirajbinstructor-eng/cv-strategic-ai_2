@@ -82,7 +82,11 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
     }
     return providers.filter(p => p.id === "paddle" || (p.checkoutAvailable && p.id === "stripe"));
   }, [providers, currency]);
-  const readyProvider = availableProviders.find(p => currency === "TND" ? ["ipay", "clictopay", "laposte_d17"].includes(p.id) : p.id === "paddle");
+  const readyProvider = currency === "TND"
+    ? TUNISIAN_PROVIDER_PRIORITY
+        .map(id => availableProviders.find(provider => provider.id === id))
+        .find((provider): provider is Provider => Boolean(provider))
+    : availableProviders.find(provider => provider.id === "paddle");
   const canStart = Boolean(readyProvider && readyProvider.id === "paddle" && currency !== "TND");
 
   async function startCheckout() {
