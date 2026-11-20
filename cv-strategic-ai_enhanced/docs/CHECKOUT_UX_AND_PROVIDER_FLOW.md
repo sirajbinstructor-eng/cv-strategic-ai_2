@@ -43,3 +43,17 @@ The public iPay by Audasoft pages describe one-shot transactions, callback event
 - Do not store PAN/CVV or wallet credentials.
 - Do not add secrets to client-side environment variables or Git.
 - Do not enable a provider until merchant approval, payout settlement, sandbox tests and operational reconciliation are verified.
+
+
+## Public Tunisian API research update (20 November 2026)
+
+See [Tunisian payment integrations](./TUNISIAN_PAYMENT_INTEGRATIONS.md) for the detailed public API research and provider-specific readiness gates.
+
+Key implementation constraints:
+- iPay by Audasoft publicly confirms JWT bearer authentication, X-Org-Id, a one-shot transaction endpoint and transaction webhook event names. Its full request/response and callback-authentication contract remains in the authenticated merchant dashboard; iPay remains first priority, but no speculative adapter is added.
+- Flouci publicly documents hosted payment creation, HMAC-SHA256 signed v2 webhooks and server-side payment verification. Its binding charge requires a CVC and is partner-restricted; unattended recurring details remain incomplete publicly.
+- Konnect publicly documents one-time payment creation, webhook reference lookup, server-side payment details and sandbox. It is not treated as an automatic subscription provider until its recurring lifecycle contract is verified.
+- Direct ClicToPay/SMT and La Poste MPGS/D17 require official merchant technical packs and onboarding/certification.
+- Paymee's public integration page is older and requires current merchant/security confirmation.
+
+The checkout and billing services must never interpret a one-time payment as a recurring subscription. All Tunisian providers remain disabled until the adapter, merchant approval, credentials, sandbox, settlement and reconciliation gates are complete.

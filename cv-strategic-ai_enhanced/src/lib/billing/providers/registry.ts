@@ -15,7 +15,7 @@ const PROVIDER_METADATA: Record<PaymentProviderId, ProviderMetadata> = {
     requiredEnvironment: ["PADDLE_API_KEY","PADDLE_WEBHOOK_SECRET","NEXT_PUBLIC_PADDLE_CLIENT_TOKEN","PADDLE_PRICE_PRO_MONTHLY_USD","PADDLE_PRICE_PRO_ANNUAL_USD","PADDLE_PRICE_PRO_MONTHLY_EUR","PADDLE_PRICE_PRO_ANNUAL_EUR","PADDLE_PRICE_CONSULTANT_MONTHLY_USD","PADDLE_PRICE_CONSULTANT_ANNUAL_USD","PADDLE_PRICE_CONSULTANT_MONTHLY_EUR","PADDLE_PRICE_CONSULTANT_ANNUAL_EUR","PADDLE_DISCOUNT_10_ID","PADDLE_DISCOUNT_20_ID","PADDLE_DISCOUNT_40_ID"],
     approvalEnvironment: "BILLING_PADDLE_MERCHANT_APPROVED"
   },
-  flouci: { name:"Flouci", purposes:["subscription","one_time"], products:["candidate","recruiter"], requiredEnvironment:["FLOUCI_APP_TOKEN","FLOUCI_APP_SECRET","FLOUCI_WEBHOOK_SECRET"], approvalEnvironment:"BILLING_FLOUCI_MERCHANT_APPROVED" },
+  flouci: { name:"Flouci", purposes:["subscription","one_time"], products:["candidate","recruiter"], requiredEnvironment:["FLOUCI_PUBLIC_KEY","FLOUCI_PRIVATE_KEY"], approvalEnvironment:"BILLING_FLOUCI_MERCHANT_APPROVED", integrationNote:"Public docs confirm hosted payment creation, HMAC-SHA256 signed v2 webhooks and server-side verify-payment. Recurring API details and merchant access still require confirmation; adapter remains disabled until implemented and verified." },
   konnect: { name:"Konnect", purposes:["one_time"], products:["candidate","recruiter"], requiredEnvironment:["KONNECT_API_KEY","KONNECT_WEBHOOK_SECRET"], approvalEnvironment:"BILLING_KONNECT_MERCHANT_APPROVED" },
   ipay: {
     name:"iPay (aggregator)", purposes:["subscription","one_time"], products:["candidate","recruiter"],
