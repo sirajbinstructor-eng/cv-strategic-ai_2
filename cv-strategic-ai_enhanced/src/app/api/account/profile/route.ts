@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
       if (existing.rowCount) {
         workspace = existing.rows[0];
       } else {
-        if (workspaceName.length < 2 || workspaceName.length > 120) {
+        const resolvedWorkspaceName = isAdmin && workspaceName.length === 0
+          ? "CV Strategist AI Admin Test Workspace"
+          : workspaceName;
+        if (resolvedWorkspaceName.length < 2 || resolvedWorkspaceName.length > 120) {
           await client.query("ROLLBACK");
           return NextResponse.json(
             { error: "Enter a company or agency name (2–120 characters)." },
@@ -63,11 +66,11 @@ export async function POST(request: NextRequest) {
         }
 
         const id = randomUUID();
-        const base = workspaceName.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 55) || "company";
+        const base = resolvedWorkspaceName.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 55) || "company";
         const slug = base + "-" + id.slice(0, 8);
         const created = await client.query(
           "INSERT INTO recruiter_workspaces(id,name,slug,owner_user_id,status) VALUES($1,$2,$3,$4,'active') RETURNING id,name,slug,status",
-          [id, workspaceName, slug, session.user.id]
+          [id, resolvedWorkspaceName, slug, session.user.id]
         );
         workspace = created.rows[0];
         await client.query(
