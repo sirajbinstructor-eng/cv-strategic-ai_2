@@ -19,6 +19,14 @@ function appOrigin() {
 }
 
 export async function POST(request: NextRequest) {
+  const originHeader = request.headers.get("origin");
+  if (originHeader) {
+    try {
+      if (new URL(originHeader).origin !== appOrigin()) return NextResponse.json({ error: "Cross-origin checkout requests are not allowed." }, { status: 403 });
+    } catch {
+      return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+    }
+  }
   const session = await getCurrentSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   let body: unknown;
