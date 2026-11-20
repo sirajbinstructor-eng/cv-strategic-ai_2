@@ -3,7 +3,7 @@
 ## Current implementation
 - Company-owned recruiter workspace with job-description CRUD (archive instead of hard delete).
 - Private candidate CV library accepts PDF and DOCX, up to 10 files per upload.
-- Original files are not retained. Extracted text is encrypted at rest using AES-256-GCM.
+- Original files are not retained. Extracted CV text, candidate filenames and stored evaluation results are encrypted at rest using AES-256-GCM.
 - Batch evaluation supports up to 10 CVs and 5 open job descriptions per CV (maximum 50 distinct CV/JD pairs).
 - One credit represents one CV assessed against one job description.
 - Existing CV extraction, Groq structured analysis, evidence validation and deterministic scoring are reused from the candidate workflow.
@@ -27,7 +27,7 @@ The recruiter workspace reads credits from its own workspace-level credit accoun
 Recruiter checkout remains disabled until the recruiter plan catalogue, credit-pack prices, provider-specific product/price IDs, merchant onboarding, settlement, webhook verification and recurring-payment capabilities are approved. No payment provider is enabled by this change.
 
 ## Privacy and fairness
-Only upload CVs the company is authorized to process. CV content is encrypted in the database; the original upload bytes are discarded after extraction. A 90-day retention expiry is applied and deletion erases encrypted content. Before production, complete the required privacy notice, lawful-basis/consent process, processor agreements, retention policy and cross-border transfer review applicable to the organization's jurisdiction.
+Only upload CVs the company is authorized to process. CV content, candidate filenames and evaluation results are encrypted in the database; the original upload bytes are discarded after extraction. A 90-day retention expiry is applied and deletion erases encrypted content. Before production, complete the required privacy notice, lawful-basis/consent process, processor agreements, retention policy and cross-border transfer review applicable to the organization's jurisdiction.
 
 The evaluation prompt excludes protected characteristics and instructs the model not to infer them. Scores are explainable evidence-weighted estimates, not ATS pass/fail decisions or hiring probabilities. Human review is mandatory; do not use results for automatic rejection or selection.
 
