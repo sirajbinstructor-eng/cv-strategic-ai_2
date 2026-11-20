@@ -37,6 +37,21 @@ export async function requireRecruiterAccess(userId: string, write = false): Pro
   const role = row.role as RecruiterAccess["role"];
   const canManage = isAdmin || role === "owner" || role === "admin" || role === "recruiter";
   if (write && !canManage) throw Object.assign(new Error("Your workspace role is read-only."), { status: 403 });
+  // Enforce the retention deadline when a workspace is accessed. Erase encrypted
+  // CV text and redact stored evaluation results that reference expired CVs.
+  const expired = await pool.query(
+    `UPDATE recruiter_candidates SET deleted_at=NOW(),encrypted_cv_text='',encryption_iv='',encryption_tag=''
+     WHERE workspace_id=$1 AND deleted_at IS NULL AND retention_expires_at<=NOW() RETURNING id`,
+    [row.workspace_id]
+  );
+  if (expired.rowCount) {
+    const expiredIds = expired.rows.map((item) => item.id);
+    await pool.query(
+      `UPDATE recruiter_batch_pairs SET status='canceled',result=NULL,completed_at=NOW()
+       WHERE cv_reference=ANY($1::text[]) AND status='completed'`,
+      [expiredIds]
+    );
+  }
   const subscription = row.subscription as Record<string, unknown> | null;
   return {
     userId, workspaceId: row.workspace_id, workspaceName: row.workspace_name, workspaceSlug: row.workspace_slug,
