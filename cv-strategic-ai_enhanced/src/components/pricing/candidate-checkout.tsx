@@ -27,7 +27,7 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Unable to start checkout.");
-      if (typeof payload.checkoutUrl !== "string" || !payload.checkoutUrl.startsWith(window.location.origin + "/billing/checkout/paddle?")) {
+      if (typeof payload.checkoutUrl !== "string" || !payload.checkoutUrl.startsWith("/billing/checkout/paddle?")) {
         throw new Error("The server returned an invalid checkout destination.");
       }
       window.location.assign(payload.checkoutUrl);
