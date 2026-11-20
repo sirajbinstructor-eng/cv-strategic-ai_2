@@ -1,4 +1,4 @@
-export const PAYMENT_PROVIDER_IDS = ["paddle", "flouci", "konnect", "ipay", "paymee", "stripe"] as const;
+export const PAYMENT_PROVIDER_IDS = ["paddle", "flouci", "konnect", "ipay", "clictopay", "laposte_d17", "paymee", "stripe"] as const;
 export type PaymentProviderId = (typeof PAYMENT_PROVIDER_IDS)[number];
 export type BillingProduct = "candidate" | "recruiter";
 export type PaymentPurpose = "subscription" | "one_time";
