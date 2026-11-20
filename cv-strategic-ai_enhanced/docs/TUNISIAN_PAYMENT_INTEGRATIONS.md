@@ -154,27 +154,6 @@ The guide is dated 2022/2023. Re-confirm current service and merchant availabili
 10. Refunds, disputes, chargebacks, cancellations and failed renewals require explicit transitions and an auditable ledger.
 11. Keep providers disabled until legal merchant approval, payout destination, API credentials, sandbox, reconciliation and production sign-off.
 
-## iPay merchant documentation supplied by the account owner
-
-The authenticated merchant documentation supplied on 20 November 2026 confirms:
-- Base URL: https://api.ipay.tn.
-- Authentication headers: Authorization: Bearer <JWT> and X-Org-Id: <organisation UUID>. The JWT is generated in the admin interface and is documented as valid for one year. Do not commit the organisation UUID or token.
-- Customer endpoints: POST /api/admin/customers and PUT /api/admin/customers/:id.
-- Plan endpoints: POST /api/admin/plans, PUT /api/integration/plans/update and POST /api/admin/plans/:id/archive.
-- Subscription endpoint: POST /api/admin/subscriptions.
-- One-shot endpoint: POST /api/admin/transactions/create-oneshot. Required body fields: product_code, amount, currency, customer_name and customer_external_id; invoice_reference is optional. Response fields include id, payment_url, amount, currency and invoice_reference.
-- Invoice endpoints: GET /api/admin/invoices, GET /api/admin/invoices/:id and GET /api/admin/invoices/:id/pdf.
-- Webhook events: transaction.created, transaction.completed, transaction.expired and transaction.failed. The documented payload includes event type, timestamp and transaction data (id, status, product_id, customer_id, month, amount, currency and invoice_reference).
-- Webhook health endpoint: GET /api/admin/webhooks/health, optionally ?probe=true.
-
-### iPay production blockers from the supplied merchant documentation
-- It does not describe webhook signature/authentication headers or a cryptographic verification mechanism.
-- It does not document a trusted server-side transaction status/detail endpoint.
-- It says iPay does not retry webhook delivery after an error.
-- transaction.completed may represent an electronic payment, a manually declared bank transfer/postal mandate, or a dashboard status update. This is not sufficient proof of settled funds.
-- Therefore, do not grant subscription/credit entitlements from transaction.completed alone. Obtain written answers from iPay on callback authentication, status verification, manual payment distinction, retry/replay protection, refunds and sandbox.
-- The supplied document shows the merchant Org ID in its example; keep actual Org ID and JWT only in server-side deployment secrets/configuration, never in Git, frontend bundles, logs or chat.
-
 ## Next implementation sequence
 
 1. Implement and test direct Flouci hosted one-time checkout, signed webhook verification and server-side status confirmation for a product that has a defined one-time purchase model. Keep automatic recurring candidate subscriptions blocked until Flouci supplies its recurring API contract.
