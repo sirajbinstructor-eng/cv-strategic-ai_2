@@ -15,7 +15,7 @@ async function getPeriod(client:PoolClient | typeof pool,userId:string,sub:Recor
  const row=await client.query("SELECT * FROM billing_usage_periods WHERE user_id=$1 AND period_start=$2 FOR UPDATE",[userId,start]);
  return row.rows[0];
 }
-export async function reserveSubscriptionAnalysis(userId:string,mode:"automatic"|"consultant"="automatic"):Promise<BillingReservation|null>{
+export async function reserveSubscriptionAnalysis(userId:string,mode:"analysis"|"consulting"="analysis"):Promise<BillingReservation|null>{
  const client=await pool.connect();try{await client.query("BEGIN");
   const user=await client.query('SELECT is_admin,is_unrestricted FROM "user" WHERE id=$1 FOR UPDATE',[userId]);
   if(!user.rowCount)throw Error("Account not found.");
