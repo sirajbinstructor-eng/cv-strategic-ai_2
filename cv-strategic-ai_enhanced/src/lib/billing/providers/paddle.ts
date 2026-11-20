@@ -84,7 +84,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     const price = priceResponse.data as PaddleJson | undefined;
     const unitPrice = price?.unit_price as PaddleJson | undefined;
     const cycle = price?.billing_cycle as PaddleJson | null | undefined;
-    if (!price || unitPrice?.currency_code !== expectedCurrency || Number(unitPrice?.amount) !== expectedBaseAmount) {
+    if (!price || price.status !== "active" || unitPrice?.currency_code !== expectedCurrency || Number(unitPrice?.amount) !== expectedBaseAmount) {
       throw new Error("The configured Paddle price does not match the server-owned catalogue. Checkout was stopped.");
     }
     const expectedCycle = input.metadata.interval === "annual" ? "year" : "month";
@@ -93,13 +93,17 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     }
 
     const percent = Number(input.metadata.discountPercent || 0);
+    const expectedAmount = Math.round(expectedBaseAmount * (100 - percent) / 100);
+    if (!Number.isSafeInteger(percent) || percent < 0 || percent > 100 || input.amountMinor !== expectedAmount) {
+      throw new Error("The checkout amount does not match the server-calculated catalogue price and discount.");
+    }
     let discountId: string | undefined;
     if (percent > 0) {
       if (![10, 20, 40].includes(percent)) throw new Error("Unsupported discount percentage.");
       discountId = requiredEnv(`PADDLE_DISCOUNT_${percent}_ID`);
       const discountResponse = await paddleRequest(`/discounts/${encodeURIComponent(discountId)}`);
       const discount = discountResponse.data as PaddleJson | undefined;
-      if (!discount || discount.status !== "active" || discount.enabled_for_checkout !== true || discount.type !== "percentage" || Number(discount.amount) !== percent || discount.recur !== true) {
+      if (!discount || discount.status !== "active" || discount.enabled_for_checkout !== true || discount.type !== "percentage" || Number(discount.amount) !== percent || discount.recur !== true || discount.maximum_recurring_intervals !== null || (Array.isArray(discount.restrict_to) && discount.restrict_to.length > 0 && !discount.restrict_to.includes(priceId) && !discount.restrict_to.includes(price.product_id))) {
         throw new Error("The configured Paddle discount does not match the approved application. Checkout was stopped.");
       }
     }
@@ -110,7 +114,6 @@ export class PaddleAdapter implements PaymentProviderAdapter {
       custom_data: {
         app_product: "candidate",
         app_subscription_id: input.referenceId,
-        app_user_id: input.customerId,
         app_checkout_version: "1"
       }
     };
