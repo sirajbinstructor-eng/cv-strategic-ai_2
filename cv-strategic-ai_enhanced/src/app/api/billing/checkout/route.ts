@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { pool } from "@/lib/db";
 import { getCurrentSession } from "@/lib/server-session";
 import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
 import { checkoutRequestSchema } from "@/lib/billing/model";
@@ -54,6 +55,12 @@ export async function POST(request: NextRequest) {
   let pendingSubscriptionId: string | undefined;
   try {
     await ensureAuthSchema();
+    if (environment === "sandbox") {
+      const admin = await pool.query(\`SELECT is_admin FROM "user" WHERE id=$1 LIMIT 1\`, [session.user.id]);
+      if (admin.rows[0]?.is_admin !== true) {
+        return NextResponse.json({ error: "Paddle sandbox checkout is restricted to authorized administrators for integration testing." }, { status: 403 });
+      }
+    }
     const quote = await service.quote(session.user.id, parsed.data);
     const subscription = await billingRepository.createPending(session.user.id, {
       provider: "paddle",
