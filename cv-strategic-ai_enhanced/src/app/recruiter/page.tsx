@@ -1,0 +1,15 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentSession } from "@/lib/server-session";
+import { pool } from "@/lib/db";
+import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
+export const dynamic = "force-dynamic";
+export default async function RecruiterPage() {
+  const session=await getCurrentSession(); if(!session?.user?.id)redirect("/");
+  await ensureAuthSchema();
+  const profile=await pool.query('SELECT account_type FROM "user" WHERE id=$1',[session.user.id]);
+  if(profile.rows[0]?.account_type!=="recruiter")redirect("/dashboard");
+  const result=await pool.query("SELECT w.id,w.name,w.slug,w.status,m.role FROM recruiter_workspaces w JOIN recruiter_workspace_members m ON m.workspace_id=w.id WHERE m.user_id=$1 AND m.status='active' AND w.status='active' ORDER BY w.created_at LIMIT 1",[session.user.id]);
+  const workspace=result.rows[0]; if(!workspace)redirect("/dashboard");
+  return <main className="dashboard-page"><header className="dashboard-header"><Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Recruiter workspace</small></span></Link><div className="header-actions"><Link className="header-link" href="/dashboard">Dashboard</Link></div></header><div className="dashboard-main"><section className="dashboard-welcome"><div><p className="eyebrow">HR · RECRUITMENT · TALENT ACQUISITION</p><h1>{workspace.name}</h1><p className="muted">Company workspace · {workspace.role}</p></div></section><section className="workspace-card"><p className="eyebrow">RECRUITER WORKFLOW</p><h2>Evaluate candidates against your open positions.</h2><p className="muted">The planned batch workflow supports up to 10 CVs and up to 5 job descriptions per CV. Each CV/job-description pair consumes one evaluation credit; premium batch matching also requires its own entitlement.</p><div className="dashboard-summary-grid"><article className="summary-tile"><span>WORKSPACE</span><strong>Active</strong><small>{workspace.slug}</small></article><article className="summary-tile"><span>TEAM ROLE</span><strong>{workspace.role}</strong><small>Company-owned access</small></article><article className="summary-tile"><span>BATCH CAPACITY</span><strong>10 × 5</strong><small>Up to 50 CV/JD evaluations</small></article></div><div className="final-trial-notice"><strong>Recruiter evaluation is not activated yet.</strong><p>This workspace setup is live, but CV upload, job-description management, batch evaluation, credit metering and recruiter subscription checkout are not yet connected. No CVs are uploaded or evaluated from this page.</p></div></section><footer className="dashboard-footer"><span>CV Strategist AI</span><Link href="/dashboard">← Back to dashboard</Link></footer></div></main>;
+}
