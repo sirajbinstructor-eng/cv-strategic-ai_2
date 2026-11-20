@@ -14,7 +14,7 @@ type AccountPayload = {
   user: { id: string; name: string; email: string; image?: string | null; accountType: "job_seeker" | "recruiter" | null };
   entitlements: {
     isAdmin: boolean; isUnrestricted: boolean; consultantEntitled: boolean;
-    granted: number; used: number; remaining: number | null; expired: boolean;
+    granted: number; used: number; reserved: number; remaining: number | null; expired: boolean;
     unlimited: boolean; workspaceLocked: boolean; expiresAt: string;
     subscription?: { plan:string; interval:string; status:string; analyses:{limit:number;used:number;reserved:number;remaining:number}; generations:{limit:number;used:number;reserved:number;remaining:number}; periodEnd:string };
   };
@@ -30,7 +30,10 @@ export function DashboardShell() {
       const response = await fetch("/api/account", { cache: "no-store" });
       if (!response.ok) throw new Error("Unable to load your account.");
       return response.json() as Promise<AccountPayload>;
-    }
+    },
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
 
   async function signOut() {
@@ -40,7 +43,7 @@ export function DashboardShell() {
   }
 
   if (accountQuery.isLoading) return <main className="dashboard-loading"><div className="spinner" /><p>Loading your workspace…</p></main>;
-  if (accountQuery.isError || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
+  if ((!accountQuery.data && accountQuery.isError) || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
 
   const { user, entitlements } = accountQuery.data;
   const mustChooseWorkspace = entitlements.isAdmin
@@ -75,6 +78,7 @@ export function DashboardShell() {
         <div className="header-actions">
           <span className="user-chip">{user.name || user.email}</span>
           {entitlements.isAdmin && <button className="button-quiet" onClick={() => setAdminWorkspaceSelected(false)}>Switch workspace</button>}
+          {!entitlements.isAdmin && user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">Plans & pricing</Link>}
           <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>
           <Link href="/dashboard/settings" className="header-link">Account settings</Link>
           {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
@@ -103,7 +107,7 @@ export function DashboardShell() {
             <AnalysisWorkspace entitlements={entitlements} onUpgrade={() => setShowUpgrade(true)} />
           </>
         )}
-        {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Payment checkout is not connected yet. Your account and trial status are safely stored. We will activate subscriptions after the payment provider is selected and merchant onboarding is complete.</p><Link className="button-primary full-width" href="/pricing">View plans and pricing</Link><button className="button-quiet full-width" type="button" onClick={() => setShowUpgrade(false)}>Close</button></section></div>}
+        {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Compare the Pro and Gold plans and choose the level that fits your goals. Online subscription checkout is not available yet; we will enable purchases once payment-provider onboarding and verification are complete. Your current access and trial balance are not affected.</p><Link className="button-primary full-width" href="/pricing">View plans and pricing</Link><button className="button-quiet full-width" type="button" onClick={() => setShowUpgrade(false)}>Close</button></section></div>}
         <footer className="dashboard-footer"><span>CV Strategist AI</span><span>Evidence-based. ATS-friendly. Candidate-controlled.</span></footer>
       </div>
     </main>

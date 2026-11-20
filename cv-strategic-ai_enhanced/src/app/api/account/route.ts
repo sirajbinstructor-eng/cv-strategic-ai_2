@@ -20,5 +20,5 @@ export async function GET() {
       ...entitlements,
       remaining: Number.isFinite(entitlements.remaining) ? entitlements.remaining : null
     }
-  });
+  }, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
