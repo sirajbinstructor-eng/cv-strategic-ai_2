@@ -16,7 +16,7 @@ declare global {
 export function PaddleCheckout({ transactionId, clientToken, environment, initialCompleted = false }: {
   transactionId: string; clientToken: string; environment: "sandbox" | "live"; initialCompleted?: boolean;
 }) {
-  const [status, setStatus] = useState("Loading Paddle's secure checkout…");
+  const [status, setStatus] = useState(initialCompleted ? "Payment received. Checking subscription confirmation…" : "Loading Paddle's secure checkout…");
   const [opened, setOpened] = useState(initialCompleted);
   const [checkoutCompleted, setCheckoutCompleted] = useState(initialCompleted);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
