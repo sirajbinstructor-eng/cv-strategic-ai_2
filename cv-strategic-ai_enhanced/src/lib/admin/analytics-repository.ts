@@ -26,7 +26,7 @@ export class AdminAnalyticsRepository {
         COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS new_7d
         FROM "user"`),
       pool.query(`SELECT
-        COUNT(*) FILTER (WHERE feature='analysis' AND status='consumed')::int AS analyses_all,
+        COUNT(*) FILTER (WHERE status='consumed')::int AS analyses_all,
         COUNT(*) FILTER (WHERE feature='cv_generation' AND status='consumed')::int AS generations_all
         FROM entitlement_reservations`),
       pool.query(`SELECT
@@ -44,8 +44,8 @@ export class AdminAnalyticsRepository {
           ) AS day
         ), analysis_daily AS (
           SELECT date_trunc('day', created_at) AS day, COUNT(*)::int AS total
-          FROM entitlement_reservations
-          WHERE feature='analysis' AND status='consumed' AND created_at >= NOW() - INTERVAL '30 days'
+          FROM analysis_usage
+          WHERE status='consumed' AND created_at >= NOW() - INTERVAL '30 days'
           GROUP BY 1
         ), generation_daily AS (
           SELECT date_trunc('day', created_at) AS day, COUNT(*)::int AS total
