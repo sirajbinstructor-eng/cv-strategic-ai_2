@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 
-type Job={id:string;title:string;department:string|null;location:string|null;employment_type:string|null;status:string;created_at:string};
+type Job={id:string;title:string;department:string|null;location:string|null;employment_type:string|null;description:string;status:string;created_at:string};
 type Candidate={id:string;original_filename:string;content_type:string;text_length:number;created_at:string;retention_expires_at:string};
 type PairResult={id:string;cvId:string;jobDescriptionId:string;status:string;result?:{analysis?:{match?:{score:number;explanation:string};strengths?:string[];gaps?:Array<{item:string;status:string}>};jobTitle?:string;error?:string}};
 type Batch={id:string;status:string;cv_count:number;job_description_count:number;evaluation_count:number;successful_evaluations:number;created_at:string;pairs:PairResult[]};
@@ -42,6 +42,7 @@ export function RecruiterWorkspaceClient(){
  const [notice,setNotice]=useState("");
  const [tab,setTab]=useState<"overview"|"jobs"|"candidates"|"matching"|"history">("overview");
  const [jobTitle,setJobTitle]=useState("");
+ const [editingJobId,setEditingJobId]=useState<string|null>(null);
  const [department,setDepartment]=useState("");
  const [location,setLocation]=useState("");
  const [employmentType,setEmploymentType]=useState("Full-time");
@@ -73,10 +74,13 @@ export function RecruiterWorkspaceClient(){
 
  async function createJob(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setBusy("job");setError("");setNotice("");
-  try{await api("/api/recruiter/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:jobTitle,department,location,employmentType,description,status:"open"})});
-   setJobTitle("");setDepartment("");setLocation("");setDescription("");setNotice("Job description published.");await refresh();
+  try{const payload=JSON.stringify({title:jobTitle,department,location,employmentType,description,status:"open"});
+   if(editingJobId)await api(`/api/recruiter/jobs/${editingJobId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:payload});
+   else await api("/api/recruiter/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:payload});
+   setJobTitle("");setDepartment("");setLocation("");setDescription("");setEditingJobId(null);setNotice(editingJobId?"Job description updated.":"Job description published.");await refresh();
   }catch(e){setError(e instanceof Error?e.message:"Unable to save job.");}finally{setBusy("");}
  }
+ function editJob(job:Job){setEditingJobId(job.id);setJobTitle(job.title);setDepartment(job.department||"");setLocation(job.location||"");setEmploymentType(job.employment_type||"Full-time");setDescription(job.description);setTab("jobs");window.scrollTo({top:0,behavior:"smooth"});}
  async function uploadCVs(){
   if(!files.length)return;setBusy("upload");setError("");setNotice("");
   try{const data=new FormData();files.forEach(file=>data.append("files",file));data.set("authorizationConfirmed",String(privacyConfirmed));const result=await api<{uploaded:Candidate[]}>("/api/recruiter/candidates",{method:"POST",body:data});
@@ -135,18 +139,18 @@ export function RecruiterWorkspaceClient(){
   </>}
 
   {tab==="jobs"&&<div className="recruiter-content-grid">
-   <section className="recruiter-panel"><p className="eyebrow">POSITION SETUP</p><h2>Create a job description</h2><p className="muted">Add the full role requirements so the evaluation can compare candidate evidence accurately.</p>
+   <section className="recruiter-panel"><p className="eyebrow">POSITION SETUP</p><h2>{editingJobId?"Edit job description":"Create a job description"}</h2><p className="muted">Add the full role requirements so the evaluation can compare candidate evidence accurately.</p>
     <form className="recruiter-form" onSubmit={createJob}>
      <label>Job title<input required minLength={2} maxLength={160} value={jobTitle} onChange={e=>setJobTitle(e.target.value)} placeholder="e.g. Senior Mechanical Engineer"/></label>
      <div className="recruiter-form-row"><label>Department<input value={department} onChange={e=>setDepartment(e.target.value)} maxLength={120} placeholder="Engineering"/></label><label>Location<input value={location} onChange={e=>setLocation(e.target.value)} maxLength={160} placeholder="Tunis / Hybrid"/></label></div>
      <label>Employment type<select value={employmentType} onChange={e=>setEmploymentType(e.target.value)}><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Internship</option><option>Temporary</option></select></label>
      <label>Complete job description<textarea required minLength={80} maxLength={30000} rows={10} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Responsibilities, mandatory qualifications, skills, tools, experience and desirable criteria…"/></label>
      <small className="recruiter-hint">{description.trim().length.toLocaleString()} / 30,000 characters · Minimum 80</small>
-     <button className="button-primary" disabled={busy==="job"||description.trim().length<80}>{busy==="job"?"Saving…":"Publish job description →"}</button>
+     <div className="recruiter-action-row"><button className="button-primary" disabled={busy==="job"||description.trim().length<80}>{busy==="job"?"Saving…":editingJobId?"Save changes →":"Publish job description →"}</button>{editingJobId&&<button className="button-quiet" type="button" onClick={()=>{setEditingJobId(null);setJobTitle("");setDepartment("");setLocation("");setDescription("");}}>Cancel edit</button>}</div>
     </form>
    </section>
    <section className="recruiter-panel"><div className="recruiter-panel-heading"><div><p className="eyebrow">OPENING LIBRARY</p><h2>Your positions <span className="count-chip">{jobs.filter(j=>j.status==="open").length}</span></h2></div></div>
-    {jobs.length===0?<div className="recruiter-empty"><strong>No job descriptions yet</strong><p>Create your first role to start matching candidates.</p></div>:<div className="recruiter-list">{jobs.map(job=><article className="recruiter-list-item" key={job.id}><div><strong>{job.title}</strong><small>{[job.department,job.location,job.employment_type].filter(Boolean).join(" · ")||"Role details"} · {job.status}</small></div><span className={job.status==="open"?"status-open":"status-closed"}>{job.status}</span>{job.status==="open"&&<button type="button" className="text-action" onClick={()=>archiveJob(job.id)} disabled={busy==="job"}>Archive</button>}</article>)}</div>}
+    {jobs.length===0?<div className="recruiter-empty"><strong>No job descriptions yet</strong><p>Create your first role to start matching candidates.</p></div>:<div className="recruiter-list">{jobs.map(job=><article className="recruiter-list-item" key={job.id}><div><strong>{job.title}</strong><small>{[job.department,job.location,job.employment_type].filter(Boolean).join(" · ")||"Role details"} · {job.status}</small></div><span className={job.status==="open"?"status-open":"status-closed"}>{job.status}</span>{job.status==="open"&&<><button type="button" className="text-action" onClick={()=>editJob(job)}>Edit</button><button type="button" className="text-action danger" onClick={()=>archiveJob(job.id)} disabled={busy==="job"}>Archive</button></>}</article>)}</div>}
    </section>
   </div>}
 
