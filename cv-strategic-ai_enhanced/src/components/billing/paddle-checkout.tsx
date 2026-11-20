@@ -13,12 +13,12 @@ declare global {
   }
 }
 
-export function PaddleCheckout({ transactionId, clientToken, environment }: {
-  transactionId: string; clientToken: string; environment: "sandbox" | "live";
+export function PaddleCheckout({ transactionId, clientToken, environment, initialCompleted = false }: {
+  transactionId: string; clientToken: string; environment: "sandbox" | "live"; initialCompleted?: boolean;
 }) {
   const [status, setStatus] = useState("Loading Paddle's secure checkout…");
-  const [opened, setOpened] = useState(false);
-  const [checkoutCompleted, setCheckoutCompleted] = useState(false);
+  const [opened, setOpened] = useState(initialCompleted);
+  const [checkoutCompleted, setCheckoutCompleted] = useState(initialCompleted);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [confirmationTimedOut, setConfirmationTimedOut] = useState(false);
 
