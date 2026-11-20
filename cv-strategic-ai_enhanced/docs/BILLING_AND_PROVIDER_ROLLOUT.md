@@ -46,14 +46,15 @@ The presence of a provider in this table does not mean it is integrated, approve
 
 Provider credentials must be configured in the deployment platform, never committed to source control or pasted into chat.
 
-- Paddle: `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `BILLING_PADDLE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_PADDLE_ENABLED=true`
+- Paddle sandbox: `PADDLE_ENVIRONMENT=sandbox`, `PADDLE_API_KEY` (sandbox key), `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `BILLING_PADDLE_SANDBOX_ENABLED=true`, `BILLING_PROVIDER_PADDLE_ENABLED=true`, and the eight `PADDLE_PRICE_{PRO|CONSULTANT}_{MONTHLY|ANNUAL}_{USD|EUR}` price IDs. Configure `PADDLE_DISCOUNT_10_ID`, `PADDLE_DISCOUNT_20_ID` and `PADDLE_DISCOUNT_40_ID` for approved discounts.
+- Paddle live: additionally require `PADDLE_ENVIRONMENT=live`, `BILLING_PADDLE_MERCHANT_APPROVED=true` and `BILLING_PADDLE_SANDBOX_VERIFIED=true`.
 - Flouci: `FLOUCI_APP_TOKEN`, `FLOUCI_APP_SECRET`, `FLOUCI_WEBHOOK_SECRET`, `BILLING_FLOUCI_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_FLOUCI_ENABLED=true`
 - Konnect: `KONNECT_API_KEY`, `KONNECT_WEBHOOK_SECRET`, `BILLING_KONNECT_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_KONNECT_ENABLED=true`
 - iPay: `IPAY_API_KEY`, `IPAY_WEBHOOK_SECRET`, `BILLING_IPAY_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_IPAY_ENABLED=true`
 - Paymee: `PAYMEE_API_KEY`, `PAYMEE_WEBHOOK_SECRET`, `BILLING_PAYMEE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_PAYMEE_ENABLED=true`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_STRIPE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_STRIPE_ENABLED=true`
 
-These flags are necessary but not sufficient: the current foundation has no production provider adapter, so checkout remains unavailable.
+The Paddle adapter supports candidate subscriptions in USD/EUR only. TND remains reserved for an approved Tunisian gateway. Paddle price IDs must match the exact server-owned base amount and billing interval. The application uses Paddle.js with a public client-side token; the API key and webhook secret remain server-only. Sandbox checkout is explicitly gated and is not a production payment option. Live checkout remains blocked until merchant approval and sandbox verification.
 
 ## Security and accounting requirements
 
