@@ -36,7 +36,7 @@ export async function POST(request:NextRequest){
    const encrypted=encryptCvText(cvText);
    const id=randomUUID();
    const contentType=extension==="pdf"?"application/pdf":DOCX;
-   const safeName=file.name.replaceAll("/","_").replaceAll("\\\\","_").replace(/[\u0000-\u001f]/g,"_").slice(0,180);
+   const safeName=file.name.replaceAll("/","_").replaceAll(String.fromCharCode(92),"_").replace(/[\u0000-\u001f]/g,"_").slice(0,180);
    const storedFilename=encryptSensitiveText(safeName);
    const r=await pool.query(`INSERT INTO recruiter_candidates(id,workspace_id,original_filename,content_type,encrypted_cv_text,encryption_iv,encryption_tag,text_length,uploaded_by)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,original_filename,content_type,text_length,created_at,retention_expires_at`,
