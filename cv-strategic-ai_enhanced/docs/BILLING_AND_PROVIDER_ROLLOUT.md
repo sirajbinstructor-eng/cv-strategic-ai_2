@@ -32,9 +32,9 @@ All providers are disabled by default. The readiness endpoint never exposes cred
 | Provider | Intended role | Required verification before activation |
 | --- | --- | --- |
 | Paddle | International SaaS Merchant of Record | Tunisian merchant acceptance, payout route, currencies, subscription and one-time product setup, webhook contract |
-| Flouci | Tunisian checkout | Merchant approval, local/international card coverage, recurring support, settlement and signed webhook contract |
+| Flouci (direct) | First direct Tunisian one-time checkout | Merchant approval, TND settlement, signed webhook + server-side verification; recurring contract required before automatic subscriptions |
 | Konnect | Tunisian checkout | Merchant approval, supported currencies, recurring support; one-time use until recurring is verified |
-| iPay | Additional Tunisian checkout | Merchant approval, current API documentation, recurring support, settlement and webhook security |
+| iPay (optional aggregator fallback) | Additional route only when its convenience outweighs its additional cost | Merchant approval, total fee quotation, callback authentication or trusted status query, manual-vs-electronic payment distinction, settlement and sandbox |
 | Paymee | Additional Tunisian checkout | Merchant approval, current API documentation, supported currencies and webhook security |
 | Stripe | Future route only if a genuinely eligible legal entity exists | Entity, tax, physical presence, bank and merchant eligibility in a Stripe-supported country |
 | PayPal | Customer payment method only through an eligible, approved checkout arrangement | Explicit confirmation that the selected provider supports PayPal for this merchant and transaction |
@@ -71,11 +71,21 @@ For Paddle, create the sandbox catalog first: two candidate products (Pro and Co
 - Maintain cancellation, refund, dispute and failed-renewal workflows.
 - Confirm Tunisian company, tax, foreign-exchange and export-of-services obligations with qualified professionals and the settlement bank.
 
-## Implementation sequence
+## Tunisian direct-first implementation order
+
+1. Flouci direct hosted one-time payments, using its documented HMAC webhook and server-side verification. Do not use this one-time adapter for auto-renewing candidate subscriptions.
+2. Direct ClicToPay/SMT after receiving the acquiring bank's official merchant pack and passing SMT certification.
+3. Direct La Poste MPGS. Treat D17 as a separate channel only after La Poste confirms a supported web merchant API.
+4. iPay as an optional aggregator fallback, displayed after direct methods and only after its total fees and webhook/status trust contract are verified.
+5. Konnect and Paymee as later one-time alternatives after merchant approval and current security/settlement verification.
+
+The application must not silently fall back from a failed direct provider to iPay. The customer must knowingly select the alternative, with any additional fees and payment method clearly disclosed.
+
+## Overall implementation sequence
 
 1. Provider-independent readiness and adapter contracts.
 2. Workspace-owned recruiter subscriptions and credit ledger.
 3. Paddle integration after merchant onboarding and current API verification.
-4. Tunisian gateways individually, after merchant approval and documentation review.
+4. Tunisian direct-first integrations in the order above, after merchant approval and documentation review.
 5. Billing portal, invoices, refunds, cancellation and reconciliation.
 6. Production enablement only after sandbox and controlled live verification.
