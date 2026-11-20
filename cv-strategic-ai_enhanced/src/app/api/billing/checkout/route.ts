@@ -66,8 +66,7 @@ export async function POST(request: NextRequest) {
       discountApplicationId: quote.discountApplicationId
     });
     pendingSubscriptionId = String(subscription.id);
-    const suppliedKey = request.headers.get("Idempotency-Key")?.trim() || "";
-    const idempotencyKey = /^[0-9a-f-]{36}$/i.test(suppliedKey) ? suppliedKey : randomUUID();
+    const idempotencyKey = randomUUID();
     const origin = appOrigin();
     const checkout = await adapter.createCheckoutSession({
       product: "candidate",
