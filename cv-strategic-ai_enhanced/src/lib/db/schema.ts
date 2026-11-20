@@ -9,7 +9,7 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   isAdmin: boolean("is_admin").notNull().default(false), isUnrestricted: boolean("is_unrestricted").notNull().default(false),
-  consultantEntitled: boolean("consultant_entitled").notNull().default(false),
+  consultantEntitled: boolean("consultant_entitled").notNull().default(false), accountType: text("account_type"),
   analysisTrialsGranted: integer("analysis_trials_granted").notNull().default(3),
   analysisTrialsUsed: integer("analysis_trials_used").notNull().default(0),
   analysisTrialsReserved: integer("analysis_trials_reserved").notNull().default(0),
