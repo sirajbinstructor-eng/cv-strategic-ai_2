@@ -133,7 +133,7 @@ Do not give the `--unrestricted` flag to ordinary testers. To grant/revoke the u
 - Examples: 10 remaining displays “Welcome! You have 10 free AI analyses.”; 1 remaining displays “Just 1 free analysis left!”; exhaustion displays the actual configured total (e.g. “You've used all 10 free analyses!”).
 - The analysis API exhaustion response also uses the account's current configured quota rather than a hardcoded number.
 - An open dashboard refreshes its account entitlements every 30 seconds and when the browser tab regains focus, so admin quota changes appear without signing out.
-- After exhaustion, the analysis workspace is blurred/locked; dashboard and account settings remain accessible. A completed third analysis remains visible in the current browser session so the user can finish reviewing/generating that CV. After leaving or refreshing, the locked workspace is shown.
+- After exhaustion, the analysis workspace is blurred/locked; dashboard and account settings remain accessible. The completed analysis that consumes the user's final available trial remains visible in the current browser session so the user can finish reviewing/generating that CV. After leaving or refreshing, the locked workspace is shown.
 - Offer expiry is enforced by the server and database using the Tunisia local end-of-day boundary (2027-01-01 00:00:00 Africa/Tunis).
 - Admin and unrestricted users bypass the trial cap and expiry.
 
