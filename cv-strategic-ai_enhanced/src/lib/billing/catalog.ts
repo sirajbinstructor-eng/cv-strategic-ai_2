@@ -1,6 +1,7 @@
 export type BillingCurrency = "USD" | "EUR" | "TND";
 export type BillingInterval = "monthly" | "annual";
 export type BillingPlan = "pro" | "consultant";
+export const PLAN_DISPLAY_NAMES: Record<BillingPlan,string> = { pro: "Pro", consultant: "Gold" };
 export type FeatureQuota = { analyses: number; generations: number };
 export type Price = { amountMinor: number; currency: BillingCurrency; exponent: 2 | 3 };
 export const PLAN_CATALOG: Record<BillingPlan, Record<BillingInterval, Record<BillingCurrency, Price>>> = {
