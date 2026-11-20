@@ -26,9 +26,8 @@ export class AdminAnalyticsRepository {
         COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS new_7d
         FROM "user"`),
       pool.query(`SELECT
-        COUNT(*) FILTER (WHERE status='consumed')::int AS analyses_all,
-        COUNT(*) FILTER (WHERE feature='cv_generation' AND status='consumed')::int AS generations_all
-        FROM entitlement_reservations`),
+        (SELECT COUNT(*)::int FROM analysis_usage WHERE status='consumed') AS analyses_all,
+        (SELECT COUNT(*)::int FROM entitlement_reservations WHERE feature='cv_generation' AND status='consumed') AS generations_all`),
       pool.query(`SELECT
         COUNT(*) FILTER (WHERE status IN ('active','canceled_at_period_end') AND current_period_end > NOW())::int AS active,
         COUNT(*) FILTER (WHERE status='past_due')::int AS past_due,
