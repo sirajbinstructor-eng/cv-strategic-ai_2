@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/server-session";
 import { requireRecruiterAccess } from "@/lib/recruiter/access";
 import { decryptCvText, decryptRecruiterPayload, encryptRecruiterPayload } from "@/lib/recruiter/cv-vault";
-import { createRecruiterBatchPlan } from "@/lib/billing/recruiter-credit-policy";
+import { createRecruiterBatchPlan, RecruiterBatchValidationError } from "@/lib/billing/recruiter-credit-policy";
 import { askGroqForJson } from "@/lib/ai/groq";
 import { ANALYSIS_SYSTEM_PROMPT, normalizeAndValidateAnalysis } from "@/lib/ai/analysis";
 import { applyDeterministicScoring } from "@/lib/ai/scoring";
@@ -116,6 +116,6 @@ export async function POST(request:NextRequest){
   return NextResponse.json({batch,credits:{required:plan.creditsRequired,consumed:successful,released:failed},notice:"Results are evidence-based decision support. A human recruiter must make all hiring decisions."},{status:201,headers:{"Cache-Control":"no-store"}});
  }catch(error){
   const e=error as {message?:string;status?:number;code?:string};
-  return NextResponse.json({error:e.message||"Unable to run recruiter evaluation.",code:e.code},{status:e.status||500});
+  return NextResponse.json({error:e.message||"Unable to run recruiter evaluation.",code:e.code},{status:e.status||(error instanceof RecruiterBatchValidationError?400:500)});
  }
 }
