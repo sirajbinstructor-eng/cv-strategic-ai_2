@@ -64,7 +64,7 @@ export type TrialReservation = { id: string; bypassed: boolean; source?: "trial"
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
 export async function reserveAnalysisTrial(userId: string, mode: "analysis" | "consulting" = "analysis"): Promise<TrialReservation> {
-  const paidReservation = await reserveSubscriptionAnalysis(userId, mode === "consulting" ? "consultant" : "automatic");
+  const paidReservation = await reserveSubscriptionAnalysis(userId, mode);
   if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
   const reservationId = randomUUID();
