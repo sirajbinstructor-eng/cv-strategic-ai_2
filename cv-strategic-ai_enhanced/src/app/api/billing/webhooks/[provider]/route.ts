@@ -32,6 +32,7 @@ async function processTransactionPaid(data: Record<string, any>) {
   const transactionId = typeof data.id === "string" ? data.id : "";
   const payment = await findPaddlePaymentByTransaction(transactionId);
   if (!payment) throw new Error("No local payment intent matches the Paddle transaction.");
+  if (payment.status === "failed" || payment.status === "refunded" || payment.status === "disputed") throw new Error("The local payment intent is no longer payable.");
   const localSubscriptionId = payment.reference_id;
   const customSubscriptionId = data.custom_data?.app_subscription_id;
   if (customSubscriptionId && customSubscriptionId !== localSubscriptionId) {
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest, context: Context) {
         const payment = await findPaddlePaymentByTransaction(transactionId);
         if (payment) {
           await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE provider='paddle' AND provider_transaction_id=$1 AND status='pending'", [transactionId]);
-          await pool.query("UPDATE billing_subscriptions SET status='past_due',updated_at=NOW() WHERE id=$1 AND provider='paddle'", [payment.reference_id]);
+          await pool.query("UPDATE billing_subscriptions SET status='past_due',updated_at=NOW() WHERE id=$1 AND status IN ('pending','active')", [payment.reference_id]);
         }
       }
       if (eventRecordId) await billingRepository.markEvent(eventRecordId, "processed");
