@@ -17,7 +17,7 @@ async function bootstrap(): Promise<void> {
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS is_unrestricted boolean NOT NULL DEFAULT false`,
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS consultant_entitled boolean NOT NULL DEFAULT false`,
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS account_type text`,
-    `DO $ BEGIN ALTER TABLE "user" ADD CONSTRAINT user_account_type_check CHECK(account_type IS NULL OR account_type IN ('job_seeker','recruiter')); EXCEPTION WHEN duplicate_object THEN NULL; END $`,
+    `DO $$ BEGIN ALTER TABLE "user" ADD CONSTRAINT user_account_type_check CHECK(account_type IS NULL OR account_type IN ('job_seeker','recruiter')); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS analysis_trials_granted integer NOT NULL DEFAULT 3`,
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS analysis_trials_used integer NOT NULL DEFAULT 0`,
     `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS analysis_trials_reserved integer NOT NULL DEFAULT 0`,
