@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
         baseAmountMinor: String(quote.price.baseAmountMinor)
       }
     });
+    const checkoutDestination = new URL(checkout.checkoutUrl);
+    if (checkoutDestination.origin !== origin || checkoutDestination.pathname !== "/billing/checkout/paddle") {
+      throw new Error("The Paddle checkout destination did not match the configured application origin.");
+    }
     await createPaddlePaymentIntent({
       userId: session.user.id,
       subscriptionId: subscription.id,
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
       idempotencyKey
     });
     return NextResponse.json({
-      checkoutUrl: checkout.checkoutUrl,
+      checkoutUrl: checkoutDestination.pathname + checkoutDestination.search,
       provider: "paddle",
       transactionId: checkout.providerCheckoutId,
       subscriptionId: subscription.id,
