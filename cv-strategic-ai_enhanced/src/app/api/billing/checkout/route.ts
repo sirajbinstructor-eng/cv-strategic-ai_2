@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     await ensureAuthSchema();
     if (environment === "sandbox") {
-      const admin = await pool.query(\`SELECT is_admin FROM "user" WHERE id=$1 LIMIT 1\`, [session.user.id]);
+      const admin = await pool.query('SELECT is_admin FROM "user" WHERE id=$1 LIMIT 1', [session.user.id]);
       if (admin.rows[0]?.is_admin !== true) {
         return NextResponse.json({ error: "Paddle sandbox checkout is restricted to authorized administrators for integration testing." }, { status: 403 });
       }
