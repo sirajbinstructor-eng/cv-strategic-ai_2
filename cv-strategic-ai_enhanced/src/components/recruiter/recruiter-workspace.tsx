@@ -32,6 +32,7 @@ export function RecruiterWorkspaceClient(){
  const [employmentType,setEmploymentType]=useState("Full-time");
  const [description,setDescription]=useState("");
  const [files,setFiles]=useState<File[]>([]);
+ const [privacyConfirmed,setPrivacyConfirmed]=useState(false);
  const [selectedCVs,setSelectedCVs]=useState<string[]>([]);
  const [selectedJobs,setSelectedJobs]=useState<string[]>([]);
  const [expandedBatch,setExpandedBatch]=useState<string|null>(null);
@@ -63,8 +64,8 @@ export function RecruiterWorkspaceClient(){
  }
  async function uploadCVs(){
   if(!files.length)return;setBusy("upload");setError("");setNotice("");
-  try{const data=new FormData();files.forEach(file=>data.append("files",file));const result=await api<{uploaded:Candidate[]}>("/api/recruiter/candidates",{method:"POST",body:data});
-   setFiles([]);setNotice(`${result.uploaded.length} CV(s) added to your private candidate library.`);await refresh();
+  try{const data=new FormData();files.forEach(file=>data.append("files",file));data.set("authorizationConfirmed",String(privacyConfirmed));const result=await api<{uploaded:Candidate[]}>("/api/recruiter/candidates",{method:"POST",body:data});
+   setFiles([]);setPrivacyConfirmed(false);setNotice(`${result.uploaded.length} CV(s) added to your private candidate library.`);await refresh();
   }catch(e){setError(e instanceof Error?e.message:"Unable to upload CVs.");}finally{setBusy("");}
  }
  async function deleteCandidate(id:string){
@@ -137,8 +138,9 @@ export function RecruiterWorkspaceClient(){
   {tab==="candidates"&&<div className="recruiter-content-grid">
    <section className="recruiter-panel"><p className="eyebrow">PRIVATE CANDIDATE LIBRARY</p><h2>Add CVs securely</h2><p className="muted">Upload up to 10 PDF or DOCX files per batch. Extracted CV text is encrypted at rest with AES-256-GCM; original files are not retained.</p>
     <label className="recruiter-drop"><span>↑</span><strong>{files.length?files.map(f=>f.name).join(", "):"Choose candidate CV files"}</strong><small>PDF or DOCX · Up to 12 MB each · Maximum 10 at a time</small><input type="file" multiple accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={e=>{setFiles(Array.from(e.target.files||[]).slice(0,10));setError("");}}/></label>
-    <p className="recruiter-hint">Only upload CVs your organization is authorized to process. Candidate data is retained for 90 days unless deleted earlier.</p>
-    <button className="button-primary" type="button" onClick={uploadCVs} disabled={!files.length||busy==="upload"}>{busy==="upload"?"Encrypting and uploading…":`Upload ${files.length||""} CV(s) →`}</button>
+    <label className="recruiter-consent"><input type="checkbox" checked={privacyConfirmed} onChange={e=>setPrivacyConfirmed(e.target.checked)}/><span>I confirm that my organization is authorized to process these candidates’ CVs and that candidates have received the required privacy information.</span></label>
+    <p className="recruiter-hint">Candidate data is retained for up to 90 days unless deleted earlier. Original files are discarded after text extraction.</p>
+    <button className="button-primary" type="button" onClick={uploadCVs} disabled={!files.length||!privacyConfirmed||busy==="upload"}>{busy==="upload"?"Encrypting and uploading…":`Upload ${files.length||""} CV(s) →`}</button>
    </section>
    <section className="recruiter-panel"><div className="recruiter-panel-heading"><div><p className="eyebrow">CANDIDATE POOL</p><h2>Uploaded CVs <span className="count-chip">{candidates.length}</span></h2></div></div>
     {candidates.length===0?<div className="recruiter-empty"><strong>Your candidate library is empty</strong><p>Uploaded CVs will appear here. The app stores encrypted extracted text, not original files.</p></div>:<div className="recruiter-list">{candidates.map(cv=><article className="recruiter-list-item" key={cv.id}><div><strong>{cv.original_filename}</strong><small>{Math.round(cv.text_length/100)/10}k characters · Added {new Date(cv.created_at).toLocaleDateString()} · Expires {new Date(cv.retention_expires_at).toLocaleDateString()}</small></div><button type="button" className="text-action danger" onClick={()=>deleteCandidate(cv.id)} disabled={busy==="delete"}>Delete</button></article>)}</div>}
