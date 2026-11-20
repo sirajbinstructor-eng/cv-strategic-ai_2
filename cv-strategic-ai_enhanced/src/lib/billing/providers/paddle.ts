@@ -125,7 +125,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     });
     const transaction = response.data as PaddleJson | undefined;
     const transactionId = transaction?.id;
-    if (typeof transactionId !== "string" || !/^txn_[a-z0-9]{26}$/i.test(transactionId)) {
+    if (typeof transactionId !== "string" || !/^txn_[a-z0-9]{26}$/i.test(transactionId) || !["draft","ready"].includes(transaction?.status)) {
       throw new Error("Paddle did not return a valid transaction reference.");
     }
 
