@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { BillingCurrency, BillingPlan } from "@/lib/billing/catalog";
 import { PLAN_CATALOG, formatPrice } from "@/lib/billing/catalog";
 
@@ -26,7 +26,7 @@ const METHOD_DETAILS: Record<string, { title: string; detail: string; region: st
   stripe: { title: "Stripe", detail: "International card checkout where the merchant is eligible.", region: "USD · EUR", icon: "card" }
 };
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   shell: { marginTop: 22, padding: 24, border: "1px solid var(--border, #e5e7eb)", borderRadius: 18, background: "var(--surface, #fff)", display: "grid", gap: 20 },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap" },
   eyebrow: { margin: 0, fontSize: 11, fontWeight: 750, letterSpacing: ".11em", textTransform: "uppercase", color: "var(--muted, #64748b)" },
@@ -75,10 +75,10 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
   const price = PLAN_CATALOG[plan][interval][currency];
   const availableProviders = useMemo(() => providers.filter(p => p.checkoutAvailable && p.products.includes("candidate") && p.supportedPurposes.includes("subscription")), [providers]);
   const relevantProviders = useMemo(() => {
-    if (currency === "TND") return providers.filter(p => ["ipay", "clictopay", "laposte_d17", "flouci", "konnect"].includes(p.id));
-    return providers.filter(p => ["paddle", "stripe"].includes(p.id));
+    if (currency === "TND") return providers.filter(p => p.id === "ipay" || (p.checkoutAvailable && ["clictopay", "laposte_d17"].includes(p.id)));
+    return providers.filter(p => p.id === "paddle" || (p.checkoutAvailable && p.id === "stripe"));
   }, [providers, currency]);
-  const readyProvider = availableProviders.find(p => currency === "TND" ? ["ipay", "clictopay", "laposte_d17", "flouci", "konnect"].includes(p.id) : ["paddle", "stripe"].includes(p.id));
+  const readyProvider = availableProviders.find(p => currency === "TND" ? ["ipay", "clictopay", "laposte_d17"].includes(p.id) : p.id === "paddle");
   const canStart = Boolean(readyProvider && readyProvider.id === "paddle" && currency !== "TND");
 
   async function startCheckout() {
