@@ -17,9 +17,9 @@ test("rejects a modified payload", () => {
   const now = 1_800_000_000;
   assert.equal(verifyPaddleSignature(raw + " ", signature(raw, now), secret, now), false);
 });
-test("rejects stale signatures", () => {
+test("rejects signatures outside the five-second replay window", () => {
   const now = 1_800_000_000;
-  assert.equal(verifyPaddleSignature(raw, signature(raw, now - 301), secret, now), false);
+  assert.equal(verifyPaddleSignature(raw, signature(raw, now - 6), secret, now), false);
 });
 test("rejects malformed and missing signatures", () => {
   assert.equal(verifyPaddleSignature(raw, "", secret), false);
