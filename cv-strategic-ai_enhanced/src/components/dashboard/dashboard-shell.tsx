@@ -78,6 +78,7 @@ export function DashboardShell() {
         <div className="header-actions">
           <span className="user-chip">{user.name || user.email}</span>
           {entitlements.isAdmin && <button className="button-quiet" onClick={() => setAdminWorkspaceSelected(false)}>Switch workspace</button>}
+          {!entitlements.isAdmin && user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">Plans & pricing</Link>}
           <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>
           <Link href="/dashboard/settings" className="header-link">Account settings</Link>
           {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
@@ -106,7 +107,7 @@ export function DashboardShell() {
             <AnalysisWorkspace entitlements={entitlements} onUpgrade={() => setShowUpgrade(true)} />
           </>
         )}
-        {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Payment checkout is not connected yet. Your account and trial status are safely stored. We will activate subscriptions after the payment provider is selected and merchant onboarding is complete.</p><Link className="button-primary full-width" href="/pricing">View plans and pricing</Link><button className="button-quiet full-width" type="button" onClick={() => setShowUpgrade(false)}>Close</button></section></div>}
+        {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Compare the Pro and Gold plans and choose the level that fits your goals. Online subscription checkout is not available yet; we will enable purchases once payment-provider onboarding and verification are complete. Your current access and trial balance are not affected.</p><Link className="button-primary full-width" href="/pricing">View plans and pricing</Link><button className="button-quiet full-width" type="button" onClick={() => setShowUpgrade(false)}>Close</button></section></div>}
         <footer className="dashboard-footer"><span>CV Strategist AI</span><span>Evidence-based. ATS-friendly. Candidate-controlled.</span></footer>
       </div>
     </main>
