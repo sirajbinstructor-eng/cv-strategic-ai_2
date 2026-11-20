@@ -31,11 +31,11 @@ The supplied iPay merchant documentation confirms the create-oneshot request/res
 
 The UI does not imply that a method is live merely because it appears in the provider catalogue. The readiness registry must confirm an implemented adapter, merchant approval, complete server credentials and the required verification gates.
 
-## iPay documentation distinction
+## iPay documentation distinction and merchant contract
 
 The integration target is **iPay by Audasoft at https://www.ipay.tn/**. Do not use the similarly named `docs.i-pay.io` service; it documents a different product and payment model.
 
-The public iPay by Audasoft pages describe one-shot transactions, callback events and an authenticated merchant dashboard for complete technical details. Before implementing requests, obtain the exact merchant endpoint schemas, authentication rules, callback authenticity mechanism, status-query endpoint, recurring-payment lifecycle, refund support and sandbox credentials from iPay.
+The account owner supplied the authenticated merchant API documentation. It confirms the create-oneshot endpoint and fields, payment_url response, customer/plan/subscription endpoints, invoices and transaction webhook payload. It does not specify webhook signature/authentication, a trusted transaction-status endpoint or webhook retries. It also warns that transaction.completed can include manually declared transfers/postal mandates. Therefore iPay remains an optional fallback and cannot grant entitlements automatically until its trust and settlement contract is completed.
 
 ## Security and activation
 
