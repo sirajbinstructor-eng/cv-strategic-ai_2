@@ -1,4 +1,7 @@
-export const PAYMENT_PROVIDER_IDS = ["paddle", "flouci", "konnect", "ipay", "clictopay", "laposte_d17", "paymee", "stripe"] as const;
+// Provider catalogue order is not the customer-facing priority. Keep local direct
+// integrations ahead of the aggregator in the explicit checkout preference below.
+export const PAYMENT_PROVIDER_IDS = ["paddle", "flouci", "clictopay", "laposte_d17", "ipay", "konnect", "paymee", "stripe"] as const;
+export const TUNISIAN_PROVIDER_PRIORITY = ["flouci", "clictopay", "laposte_d17", "ipay"] as const;
 export type PaymentProviderId = (typeof PAYMENT_PROVIDER_IDS)[number];
 export type BillingProduct = "candidate" | "recruiter";
 export type PaymentPurpose = "subscription" | "one_time";

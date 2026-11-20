@@ -5,7 +5,7 @@
 The checkout flow is deliberately calm and low-friction:
 - Show the selected plan, billing frequency, currency and fixed catalogue price together before payment.
 - Check provider readiness from the server; never show an unavailable provider as selectable.
-- Keep the first Tunisian route focused on iPay. Direct ClicToPay/SMT and La Poste/D17 are fallback integrations and are shown only when they are genuinely checkout-ready.
+- Prioritize direct Tunisian integrations: Flouci first for supported one-time payments, then direct ClicToPay/SMT and La Poste MPGS/D17 when their official merchant APIs are available. Keep iPay as an explicitly labelled optional aggregator fallback, not the default route.
 - Do not ask the customer for card, wallet, bank or identity details on CV Strategist AI pages.
 - Use the provider's hosted payment experience when an adapter is enabled.
 - Explain a temporary unavailable state in one concise message, without implying that a payment attempt was made.
@@ -22,17 +22,20 @@ The checkout flow is deliberately calm and low-friction:
 
 ## Tunisian provider order
 
-1. iPay aggregator first, after its authenticated merchant API pack and sandbox are obtained.
-2. Direct ClicToPay / SMT as a separate alternative, after bank onboarding and SMT test certification.
-3. Direct La Poste / e-Dinar / D17 only after La Poste confirms the supported merchant flow and provides its official kit.
+1. Direct Flouci for one-time TND payments, after merchant approval and adapter verification. The public one-time API must not be used for automatic monthly/annual renewals; its recurring contract is not yet fully documented.
+2. Direct ClicToPay / SMT after bank onboarding, official merchant integration pack and SMT certification.
+3. Direct La Poste MPGS; D17 is shown only if La Poste confirms a supported web merchant API and supplies its integration kit.
+4. iPay by Audasoft as an optional aggregator fallback. Label it clearly as an aggregator; disclose any additional fees confirmed by the merchant contract. Never silently route a failed direct payment through iPay.
+
+The supplied iPay merchant documentation confirms the create-oneshot request/response and webhook event payload, but does not document callback signature/authentication or a trusted transaction-status lookup. It also says failed webhook delivery is not retried and that transaction.completed can include manually declared bank transfers or postal mandates. Therefore iPay remains unavailable for automatic entitlement grants until those security and settlement questions are resolved.
 
 The UI does not imply that a method is live merely because it appears in the provider catalogue. The readiness registry must confirm an implemented adapter, merchant approval, complete server credentials and the required verification gates.
 
-## iPay documentation distinction
+## iPay documentation distinction and merchant contract
 
 The integration target is **iPay by Audasoft at https://www.ipay.tn/**. Do not use the similarly named `docs.i-pay.io` service; it documents a different product and payment model.
 
-The public iPay by Audasoft pages describe one-shot transactions, callback events and an authenticated merchant dashboard for complete technical details. Before implementing requests, obtain the exact merchant endpoint schemas, authentication rules, callback authenticity mechanism, status-query endpoint, recurring-payment lifecycle, refund support and sandbox credentials from iPay.
+The account owner supplied the authenticated merchant API documentation. It confirms the create-oneshot endpoint and fields, payment_url response, customer/plan/subscription endpoints, invoices and transaction webhook payload. It does not specify webhook signature/authentication, a trusted transaction-status endpoint or webhook retries. It also warns that transaction.completed can include manually declared transfers/postal mandates. Therefore iPay remains an optional fallback and cannot grant entitlements automatically until its trust and settlement contract is completed.
 
 ## Security and activation
 
@@ -50,7 +53,9 @@ The public iPay by Audasoft pages describe one-shot transactions, callback event
 See [Tunisian payment integrations](./TUNISIAN_PAYMENT_INTEGRATIONS.md) for the detailed public API research and provider-specific readiness gates.
 
 Key implementation constraints:
-- iPay by Audasoft publicly confirms JWT bearer authentication, X-Org-Id, a one-shot transaction endpoint and transaction webhook event names. Its full request/response and callback-authentication contract remains in the authenticated merchant dashboard; iPay remains first priority, but no speculative adapter is added.
+- Direct Flouci is the first one-time integration priority; its public API documents HMAC-SHA256 webhook verification and server-side payment verification, but not the complete automatic recurring lifecycle.
+- Direct ClicToPay/SMT and La Poste MPGS/D17 follow when official merchant integration packs and certification are supplied.
+- iPay is an optional aggregator fallback. The supplied merchant documentation confirms JWT + X-Org-Id, create-oneshot request/response, invoices and webhook payloads, but does not document webhook authentication or a trusted status lookup. No automatic entitlement grant is permitted from transaction.completed alone.
 - Flouci publicly documents hosted payment creation, HMAC-SHA256 signed v2 webhooks and server-side payment verification. Its binding charge requires a CVC and is partner-restricted; unattended recurring details remain incomplete publicly.
 - Konnect publicly documents one-time payment creation, webhook reference lookup, server-side payment details and sandbox. It is not treated as an automatic subscription provider until its recurring lifecycle contract is verified.
 - Direct ClicToPay/SMT and La Poste MPGS/D17 require official merchant technical packs and onboarding/certification.

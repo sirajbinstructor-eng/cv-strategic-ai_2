@@ -1,12 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getPaymentProviderReadiness, getPaymentProviderReadinessById } from "../src/lib/billing/providers/registry";
+import { TUNISIAN_PROVIDER_PRIORITY } from "../src/lib/billing/providers/types";
 
-const ids = ["ipay", "clictopay", "laposte_d17"] as const;
+const ids = ["flouci", "clictopay", "laposte_d17", "ipay"] as const;
 const envKeys = [
-  "BILLING_PROVIDER_IPAY_ENABLED","BILLING_PROVIDER_CLICTOPAY_ENABLED","BILLING_PROVIDER_LAPOSTE_D17_ENABLED",
-  "BILLING_IPAY_MERCHANT_APPROVED","BILLING_CLICTOPAY_MERCHANT_APPROVED","BILLING_LAPOSTE_MERCHANT_APPROVED",
-  "IPAY_ORG_ID","IPAY_API_TOKEN","IPAY_WEBHOOK_SECRET",
+  "BILLING_PROVIDER_FLOUCI_ENABLED","BILLING_PROVIDER_IPAY_ENABLED","BILLING_PROVIDER_CLICTOPAY_ENABLED","BILLING_PROVIDER_LAPOSTE_D17_ENABLED",
+  "BILLING_FLOUCI_MERCHANT_APPROVED","BILLING_IPAY_MERCHANT_APPROVED","BILLING_CLICTOPAY_MERCHANT_APPROVED","BILLING_LAPOSTE_MERCHANT_APPROVED",
+  "FLOUCI_PUBLIC_KEY","FLOUCI_PRIVATE_KEY","IPAY_ORG_ID","IPAY_JWT",
   "CLICTOPAY_API_USERNAME","CLICTOPAY_API_PASSWORD","CLICTOPAY_API_BASE_URL",
   "LAPOSTE_MERCHANT_ID","LAPOSTE_MERCHANT_SECRET","LAPOSTE_API_BASE_URL"
 ];
@@ -29,9 +30,11 @@ test("new Tunisian payment providers are disabled by default", () => isolatedEnv
 }));
 test("credentials and flags cannot enable a Tunisian provider without an implemented adapter", () => isolatedEnvironment(() => {
   for (const key of envKeys) process.env[key] = "placeholder-test-value";
+  process.env.BILLING_PROVIDER_FLOUCI_ENABLED = "true";
   process.env.BILLING_PROVIDER_IPAY_ENABLED = "true";
   process.env.BILLING_PROVIDER_CLICTOPAY_ENABLED = "true";
   process.env.BILLING_PROVIDER_LAPOSTE_D17_ENABLED = "true";
+  process.env.BILLING_FLOUCI_MERCHANT_APPROVED = "true";
   process.env.BILLING_IPAY_MERCHANT_APPROVED = "true";
   process.env.BILLING_CLICTOPAY_MERCHANT_APPROVED = "true";
   process.env.BILLING_LAPOSTE_MERCHANT_APPROVED = "true";
@@ -41,7 +44,14 @@ test("credentials and flags cannot enable a Tunisian provider without an impleme
     assert.equal(readiness.checkoutAvailable, false);
   }
 }));
-test("provider readiness catalogue includes iPay, direct ClicToPay and direct La Poste/D17", () => isolatedEnvironment(() => {
+test("provider readiness catalogue includes direct Flouci, ClicToPay, La Poste/D17 and optional iPay fallback", () => isolatedEnvironment(() => {
   const providers = getPaymentProviderReadiness();
   for (const id of ids) assert.ok(providers.some((provider) => provider.id === id));
+  assert.deepEqual(TUNISIAN_PROVIDER_PRIORITY, ids);
+  assert.deepEqual(providers.filter(provider => ids.includes(provider.id as typeof ids[number])).map(provider => provider.id), ids);
 }));
+test("Flouci one-time public contract is not advertised as recurring subscription support", () => isolatedEnvironment(() => {
+  const flouci = getPaymentProviderReadinessById("flouci");
+  assert.deepEqual(flouci.supportedPurposes, ["one_time"]);
+}));
+
