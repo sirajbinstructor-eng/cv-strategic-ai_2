@@ -10,6 +10,6 @@ export async function GET() {
   return NextResponse.json({
     providers,
     checkoutAvailable: providers.some((provider) => provider.checkoutAvailable),
-    note: "Provider status is informational. Checkout remains unavailable until merchant approval, provider credentials, an implemented adapter and sandbox verification are complete."
+    note: "Paddle sandbox checkout is restricted to controlled integration tests. Live customer checkout remains unavailable until merchant approval, complete credentials, sandbox verification and explicit live enablement are in place."
   }, { headers: { "Cache-Control": "no-store" } });
 }
