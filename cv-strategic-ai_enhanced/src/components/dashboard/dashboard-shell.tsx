@@ -43,7 +43,7 @@ export function DashboardShell() {
   }
 
   if (accountQuery.isLoading) return <main className="dashboard-loading"><div className="spinner" /><p>Loading your workspace…</p></main>;
-  if (accountQuery.isError || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
+  if ((!accountQuery.data && accountQuery.isError) || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
 
   const { user, entitlements } = accountQuery.data;
   const mustChooseWorkspace = entitlements.isAdmin
