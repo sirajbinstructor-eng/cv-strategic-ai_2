@@ -50,7 +50,7 @@ Provider credentials must be configured in the deployment platform, never commit
 - Paddle live: additionally require `PADDLE_ENVIRONMENT=live`, `BILLING_PADDLE_MERCHANT_APPROVED=true` and `BILLING_PADDLE_SANDBOX_VERIFIED=true`. Replace the sandbox API key, client token, webhook destination secret, all eight price IDs and three discount IDs with their live-environment equivalents, then redeploy.
 - Flouci: `FLOUCI_APP_TOKEN`, `FLOUCI_APP_SECRET`, `FLOUCI_WEBHOOK_SECRET`, `BILLING_FLOUCI_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_FLOUCI_ENABLED=true`
 - Konnect: `KONNECT_API_KEY`, `KONNECT_WEBHOOK_SECRET`, `BILLING_KONNECT_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_KONNECT_ENABLED=true`
-- iPay: `IPAY_API_KEY`, `IPAY_WEBHOOK_SECRET`, `BILLING_IPAY_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_IPAY_ENABLED=true`
+- iPay (reserved names; do not configure until its authenticated merchant API contract is reviewed): `IPAY_ORG_ID`, `IPAY_API_TOKEN`, `IPAY_WEBHOOK_SECRET`, `BILLING_IPAY_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_IPAY_ENABLED=true`. See `docs/TUNISIAN_PAYMENT_INTEGRATIONS.md`.
 - Paymee: `PAYMEE_API_KEY`, `PAYMEE_WEBHOOK_SECRET`, `BILLING_PAYMEE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_PAYMEE_ENABLED=true`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_STRIPE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_STRIPE_ENABLED=true`
 
