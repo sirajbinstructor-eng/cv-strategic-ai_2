@@ -2,7 +2,7 @@ export const PAYMENT_PROVIDER_IDS = ["paddle", "flouci", "konnect", "ipay", "pay
 export type PaymentProviderId = (typeof PAYMENT_PROVIDER_IDS)[number];
 export type BillingProduct = "candidate" | "recruiter";
 export type PaymentPurpose = "subscription" | "one_time";
-export type ProviderReadinessStatus = "disabled" | "merchant_approval_required" | "credentials_missing" | "adapter_not_implemented" | "sandbox_verification_required" | "ready";
+export type ProviderReadinessStatus = "disabled" | "merchant_approval_required" | "credentials_missing" | "adapter_not_implemented" | "sandbox_testing" | "sandbox_verification_required" | "ready";
 export interface PaymentProviderReadiness {
   id: PaymentProviderId; name: string; checkoutAvailable: boolean; status: ProviderReadinessStatus;
   supportedPurposes: PaymentPurpose[]; products: BillingProduct[]; reasons: string[];
