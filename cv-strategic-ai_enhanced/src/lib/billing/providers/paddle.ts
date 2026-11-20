@@ -103,7 +103,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
       discountId = requiredEnv(`PADDLE_DISCOUNT_${percent}_ID`);
       const discountResponse = await paddleRequest(`/discounts/${encodeURIComponent(discountId)}`);
       const discount = discountResponse.data as PaddleJson | undefined;
-      if (!discount || discount.status !== "active" || discount.enabled_for_checkout !== true || discount.type !== "percentage" || Number(discount.amount) !== percent || discount.recur !== true || discount.maximum_recurring_intervals !== null || discount.expires_at !== null || (Array.isArray(discount.restrict_to) && discount.restrict_to.length > 0 && !discount.restrict_to.includes(priceId) && !discount.restrict_to.includes(price.product_id))) {
+      if (!discount || discount.status !== "active" || discount.enabled_for_checkout !== true || discount.type !== "percentage" || Number(discount.amount) !== percent || discount.recur !== true || discount.maximum_recurring_intervals !== null || discount.expires_at !== null || discount.usage_limit !== null || (Array.isArray(discount.restrict_to) && discount.restrict_to.length > 0 && !discount.restrict_to.includes(priceId) && !discount.restrict_to.includes(price.product_id))) {
         throw new Error("The configured Paddle discount does not match the approved application. Checkout was stopped.");
       }
     }
