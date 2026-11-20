@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test": "tsx --test tests/scoring.test.ts tests/admin-validation.test.ts tests/discounts.test.ts tests/billing.test.ts tests/recruiter-credit-policy.test.ts tests/paddle-webhook.test.ts"
+    "test": "tsx --test tests/scoring.test.ts tests/admin-validation.test.ts tests/discounts.test.ts tests/billing.test.ts tests/recruiter-credit-policy.test.ts tests/paddle-webhook.test.ts tests/tunisia-provider-readiness.test.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.25",
