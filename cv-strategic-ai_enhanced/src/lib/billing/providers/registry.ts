@@ -56,15 +56,15 @@ export function getPaymentProviderReadiness(): PaymentProviderReadiness[] {
     } else if (missing.length) {
       status = "credentials_missing";
       reasons.push("Required merchant credentials are not completely configured.");
-    } else if (!IMPLEMENTED_ADAPTERS.has(id)) {
-      status = "adapter_not_implemented";
-      reasons.push(m.integrationNote || "The provider adapter and its security verification have not been implemented.");
     } else if (id === "paddle" && paddleEnvironment === "sandbox") {
       status = "sandbox_testing";
       reasons.push("Paddle sandbox is restricted to controlled administrator integration tests; it is not customer live checkout.");
-    } else if (id === "paddle" && paddleEnvironment === "live" && !approved) {
+    } else if (!approved) {
       status = "merchant_approval_required";
-      reasons.push("Paddle live merchant onboarding must be approved before live checkout.");
+      reasons.push("Merchant onboarding and written approval have not been confirmed.");
+    } else if (!IMPLEMENTED_ADAPTERS.has(id)) {
+      status = "adapter_not_implemented";
+      reasons.push(m.integrationNote || "The provider adapter and its security verification have not been implemented.");
     } else if (id === "paddle" && paddleEnvironment === "live" && process.env.BILLING_PADDLE_SANDBOX_VERIFIED !== "true") {
       status = "sandbox_verification_required";
       reasons.push("Complete Paddle sandbox checkout and webhook verification before live checkout.");
