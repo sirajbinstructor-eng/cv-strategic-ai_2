@@ -28,13 +28,14 @@ export const auth=betterAuth({
   isAdmin:{type:"boolean",required:false,defaultValue:false,input:false},
   isUnrestricted:{type:"boolean",required:false,defaultValue:false,input:false},
   consultantEntitled:{type:"boolean",required:false,defaultValue:false,input:false},
+  accountType:{type:"string",required:false,defaultValue:null,input:false},
   analysisTrialsGranted:{type:"number",required:false,defaultValue:3,input:false},
   analysisTrialsUsed:{type:"number",required:false,defaultValue:0,input:false},
   analysisTrialsReserved:{type:"number",required:false,defaultValue:0,input:false},
   analysisTrialExpiresAt:{type:"date",required:false,defaultValue:new Date("2026-12-31T23:00:00.000Z"),input:false}
  }},
  databaseHooks:{user:{
-  create:{before:async user=>{const email=String(user.email||"").trim().toLowerCase(),approved=isApprovedAdmin(email);return {data:{...user,email,isAdmin:approved,isUnrestricted:approved}};}}
+  create:{before:async user=>{const email=String(user.email||"").trim().toLowerCase(),approved=isApprovedAdmin(email);return {data:{...user,email,isAdmin:approved,isUnrestricted:approved,consultantEntitled:approved}};}}
  }},
  advanced:{database:{generateId:()=>randomUUID()},useSecureCookies:process.env.NODE_ENV==="production"},
  rateLimit:{enabled:true,window:60,max:100}
