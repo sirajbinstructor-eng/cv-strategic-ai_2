@@ -9,6 +9,21 @@ type PairResult={id:string;cvId:string;jobDescriptionId:string;status:string;res
 type Batch={id:string;status:string;cv_count:number;job_description_count:number;evaluation_count:number;successful_evaluations:number;created_at:string;pairs:PairResult[]};
 type Workspace={workspace:{id:string;name:string;slug:string;role:string};permissions:{canManage:boolean;isAdmin:boolean;unrestricted:boolean;premiumBatchMatchingEnabled:boolean};credits:{included:number;purchased:number;reserved:number;available:number};subscription:Record<string,unknown>|null;metrics:{jobs:{total:number;open:number};candidates:{total:number};batches:{total:number;completed:number}}};
 
+function candidateRankings(batch:Batch,candidates:Candidate[],jobs:Job[]){
+ const grouped=new Map<string,Array<{jobTitle:string;score:number}>>();
+ for(const pair of batch.pairs){
+  const score=pair.result?.analysis?.match?.score;
+  if(pair.status!=="completed"||typeof score!=="number")continue;
+  const jobTitle=jobs.find(job=>job.id===pair.jobDescriptionId)?.title||pair.result?.jobTitle||"Position";
+  const rows=grouped.get(pair.cvId)||[];
+  rows.push({jobTitle,score});grouped.set(pair.cvId,rows);
+ }
+ return Array.from(grouped.entries()).map(([cvId,rows])=>({
+  cvName:candidates.find(candidate=>candidate.id===cvId)?.original_filename||"Candidate CV",
+  jobs:rows.sort((a,b)=>b.score-a.score)
+ })).sort((a,b)=>(b.jobs[0]?.score||0)-(a.jobs[0]?.score||0));
+}
+
 async function api<T>(url:string,init?:RequestInit):Promise<T>{
  const response=await fetch(url,{...init,cache:"no-store"});
  const payload=await response.json().catch(()=>({}));
@@ -162,7 +177,7 @@ export function RecruiterWorkspaceClient(){
 
   {tab==="history"&&<section className="recruiter-panel"><p className="eyebrow">ASSESSMENT ARCHIVE</p><h2>Evaluation history</h2>
    {batches.length===0?<div className="recruiter-empty"><strong>No evaluations yet</strong><p>Once you run a comparison, candidate assessments and evidence summaries will appear here.</p></div>:<div className="recruiter-batch-list">{batches.map(batch=><article className="recruiter-batch" key={batch.id}><button type="button" className="recruiter-batch-head" onClick={()=>setExpandedBatch(expandedBatch===batch.id?null:batch.id)}><span><strong>{batch.cv_count} CVs · {batch.job_description_count} positions</strong><small>{new Date(batch.created_at).toLocaleString()} · {batch.successful_evaluations}/{batch.evaluation_count} completed</small></span><span className={batch.status==="completed"?"status-open":"status-closed"}>{batch.status}</span><b>{expandedBatch===batch.id?"−":"+"}</b></button>
-    {expandedBatch===batch.id&&<div className="recruiter-results">{batch.pairs.map(pair=><article className="recruiter-result-row" key={pair.id}><div><strong>{candidates.find(c=>c.id===pair.cvId)?.original_filename||"Candidate CV"}</strong><small>{jobs.find(j=>j.id===pair.jobDescriptionId)?.title||pair.result?.jobTitle||"Position"}</small></div>{pair.status==="completed"&&pair.result?.analysis?.match?<div className="result-score"><strong>{pair.result.analysis.match.score}%</strong><small>Evidence match</small></div>:<span className={pair.status==="failed"?"status-closed":"status-open"}>{pair.status==="failed"?(pair.result?.error||"Failed"):pair.status}</span>}
+    {expandedBatch===batch.id&&<div className="recruiter-results"><div className="recruiter-ranking-grid">{candidateRankings(batch,candidates,jobs).map((ranking,index)=><article className="recruiter-ranking-card" key={ranking.cvName+index}><span>BEST-FIT POSITION · #{index+1}</span><strong>{ranking.cvName}</strong>{ranking.jobs.map((job,jobIndex)=><div key={job.jobTitle+jobIndex}><b>{jobIndex+1}. {job.jobTitle}</b><em>{job.score}%</em></div>)}</article>)}</div>{batch.pairs.map(pair=><article className="recruiter-result-row" key={pair.id}><div><strong>{candidates.find(c=>c.id===pair.cvId)?.original_filename||"Candidate CV"}</strong><small>{jobs.find(j=>j.id===pair.jobDescriptionId)?.title||pair.result?.jobTitle||"Position"}</small></div>{pair.status==="completed"&&pair.result?.analysis?.match?<div className="result-score"><strong>{pair.result.analysis.match.score}%</strong><small>Evidence match</small></div>:<span className={pair.status==="failed"?"status-closed":"status-open"}>{pair.status==="failed"?(pair.result?.error||"Failed"):pair.status}</span>}
       {pair.status==="completed"&&pair.result?.analysis&&<div className="result-evidence"><p>{pair.result.analysis.match?.explanation}</p><strong>Evidence strengths</strong><ul>{(pair.result.analysis.strengths||[]).slice(0,4).map((v,i)=><li key={i}>{v}</li>)}</ul><strong>Gaps to clarify</strong><ul>{(pair.result.analysis.gaps||[]).slice(0,4).map((v,i)=><li key={i}>{v.item} — {v.status.replaceAll("_"," ")}</li>)}</ul></div>}
      </article>)}</div>}
    </article>)}</div>}
