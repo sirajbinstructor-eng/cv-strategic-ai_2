@@ -12,15 +12,16 @@ export function getPaymentProviderReadiness(): PaymentProviderReadiness[] {
   return PAYMENT_PROVIDER_IDS.map((id) => {
     const m=PROVIDER_METADATA[id], reasons:string[]=[];
     const enabled=process.env[`BILLING_PROVIDER_${id.toUpperCase()}_ENABLED`]==="true";
+    const paddleEnvironment=process.env.PADDLE_ENVIRONMENT==="live"?"live":"sandbox";
     const approved=process.env[m.approvalEnvironment]==="true";
     const missing=m.requiredEnvironment.filter((key)=>!process.env[key]);
     let status:PaymentProviderReadiness["status"];
     if(!enabled){status="disabled";reasons.push("Provider is disabled by default. Explicit enablement is required.");}
     else if(missing.length){status="credentials_missing";reasons.push("Required provider credentials are not completely configured.");}
     else if(!IMPLEMENTED_ADAPTERS.has(id)){status="adapter_not_implemented";reasons.push("The provider adapter has not been implemented and verified.");}
-    else if(id==="paddle"&&(process.env.PADDLE_ENVIRONMENT||"sandbox")==="sandbox"){status="sandbox_testing";reasons.push("Paddle sandbox checkout is available only for controlled integration tests; customer live checkout is not enabled.");}
-    else if(id==="paddle"&&process.env.PADDLE_ENVIRONMENT!=="sandbox"&&!approved){status="merchant_approval_required";reasons.push("Paddle live merchant onboarding must be approved before live checkout.");}
-    else if(id==="paddle"&&process.env.PADDLE_ENVIRONMENT==="live"&&process.env.BILLING_PADDLE_SANDBOX_VERIFIED!=="true"){status="sandbox_verification_required";reasons.push("Complete Paddle sandbox checkout and webhook verification before live checkout.");}
+    else if(id==="paddle"&&paddleEnvironment==="sandbox"){status="sandbox_testing";reasons.push("Paddle sandbox checkout is available only for controlled integration tests; customer live checkout is not enabled.");}
+    else if(id==="paddle"&&paddleEnvironment==="live"&&!approved){status="merchant_approval_required";reasons.push("Paddle live merchant onboarding must be approved before live checkout.");}
+    else if(id==="paddle"&&paddleEnvironment==="live"&&process.env.BILLING_PADDLE_SANDBOX_VERIFIED!=="true"){status="sandbox_verification_required";reasons.push("Complete Paddle sandbox checkout and webhook verification before live checkout.");}
     else {status="ready";}
     return {id,name:m.name,checkoutAvailable:status==="ready",status,supportedPurposes:m.purposes,products:m.products,reasons};
   });
