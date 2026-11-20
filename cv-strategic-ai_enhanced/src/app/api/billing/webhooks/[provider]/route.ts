@@ -135,7 +135,7 @@ async function processSubscriptionEvent(eventType: string, data: Record<string, 
   let localStatus: string;
   if (isCanceled) localStatus = "expired";
   else if (isPastDue) localStatus = "past_due";
-  else if (paddleStatus === "active" && (paymentStatus === "paid" || ["active","past_due","canceled_at_period_end"].includes(prior.rows[0].status))) localStatus = "active";
+  else if (paddleStatus === "active" && (paymentStatus === "paid" || ["active","canceled_at_period_end"].includes(prior.rows[0].status))) localStatus = "active";
   else if (paddleStatus === "paused") localStatus = "past_due";
   else localStatus = prior.rows[0].status;
 
