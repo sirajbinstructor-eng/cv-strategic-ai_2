@@ -3,7 +3,9 @@
   "version": "0.2.2",
   "private": true,
   "description": "Evidence-based, ATS-friendly CV analysis and tailoring platform.",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +14,7 @@
     "lint": "eslint .",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test": "tsx --test tests/scoring.test.ts tests/admin-validation.test.ts tests/discounts.test.ts tests/billing.test.ts"
+    "test": "tsx --test tests/scoring.test.ts tests/admin-validation.test.ts tests/discounts.test.ts tests/billing.test.ts tests/recruiter-credit-policy.test.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.25",
