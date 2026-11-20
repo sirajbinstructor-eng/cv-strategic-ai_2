@@ -60,7 +60,7 @@ export function verifyPaddleSignature(rawBody: string, signatureHeader: string, 
   const signatures = fields.filter(([key]) => key === "h1").map(([, value]) => value).filter(Boolean);
   if (!timestamp || !/^\d{1,12}$/.test(timestamp) || signatures.length === 0) return false;
   const timestampNumber = Number(timestamp);
-  if (!Number.isSafeInteger(timestampNumber) || Math.abs(nowSeconds - timestampNumber) > 300) return false;
+  if (!Number.isSafeInteger(timestampNumber) || Math.abs(nowSeconds - timestampNumber) > 5) return false;
   const expected = createHmac("sha256", secret).update(`${timestamp}:${rawBody}`, "utf8").digest();
   return signatures.some((signature) => {
     if (!/^[a-f0-9]{64}$/i.test(signature)) return false;
@@ -99,7 +99,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
       discountId = requiredEnv(`PADDLE_DISCOUNT_${percent}_ID`);
       const discountResponse = await paddleRequest(`/discounts/${encodeURIComponent(discountId)}`);
       const discount = discountResponse.data as PaddleJson | undefined;
-      if (!discount || discount.status !== "active" || discount.type !== "percentage" || Number(discount.amount) !== percent) {
+      if (!discount || discount.status !== "active" || discount.enabled_for_checkout !== true || discount.type !== "percentage" || Number(discount.amount) !== percent || discount.recur !== true) {
         throw new Error("The configured Paddle discount does not match the approved application. Checkout was stopped.");
       }
     }
