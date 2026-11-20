@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { BillingCurrency, BillingPlan } from "@/lib/billing/catalog";
 import { PLAN_CATALOG, formatPrice } from "@/lib/billing/catalog";
+import { TUNISIAN_PROVIDER_PRIORITY } from "@/lib/billing/providers/types";
 
 type ProviderId = "paddle" | "flouci" | "konnect" | "ipay" | "clictopay" | "laposte_d17" | "paymee" | "stripe";
 type Provider = {
@@ -17,10 +18,10 @@ type Provider = {
 
 const METHOD_DETAILS: Record<string, { title: string; detail: string; region: string; icon: string }> = {
   paddle: { title: "International cards", detail: "Secure hosted checkout for supported international currencies.", region: "USD · EUR", icon: "card" },
-  ipay: { title: "iPay — Tunisian payment methods", detail: "One checkout for supported local methods such as ClicToPay, D17 and mobile wallets, subject to your merchant agreement.", region: "Tunisia · TND", icon: "local" },
+  ipay: { title: "iPay — optional aggregator", detail: "Alternative single checkout for supported local methods. May add an aggregator fee to the underlying payment cost.", region: "Tunisia · TND · fallback", icon: "local" },
   clictopay: { title: "ClicToPay / SMT", detail: "Direct bank-acquired card checkout for eligible Tunisian merchants.", region: "Tunisia · TND", icon: "bank" },
   laposte_d17: { title: "La Poste / e-Dinar / D17", detail: "Direct postal and wallet payment integration, subject to merchant API eligibility.", region: "Tunisia · TND", icon: "wallet" },
-  flouci: { title: "Flouci", detail: "Mobile wallet checkout, subject to merchant onboarding.", region: "Tunisia · TND", icon: "wallet" },
+  flouci: { title: "Flouci — direct", detail: "Direct hosted wallet/card payment, subject to merchant onboarding. Automatic subscription renewal requires a separately verified recurring contract.", region: "Tunisia · TND · direct", icon: "wallet" },
   konnect: { title: "Konnect", detail: "Local payment gateway, subject to current merchant eligibility.", region: "Tunisia · TND", icon: "card" },
   paymee: { title: "Paymee", detail: "Local card checkout, subject to current merchant eligibility.", region: "Tunisia · TND", icon: "card" },
   stripe: { title: "Stripe", detail: "International card checkout where the merchant is eligible.", region: "USD · EUR", icon: "card" }
@@ -75,7 +76,10 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
   const price = PLAN_CATALOG[plan][interval][currency];
   const availableProviders = useMemo(() => providers.filter(p => p.checkoutAvailable && p.products.includes("candidate") && p.supportedPurposes.includes("subscription")), [providers]);
   const relevantProviders = useMemo(() => {
-    if (currency === "TND") return providers.filter(p => p.id === "ipay" || (p.checkoutAvailable && ["clictopay", "laposte_d17"].includes(p.id)));
+    if (currency === "TND") {
+      const byId = new Map(providers.map(provider => [provider.id, provider]));
+      return TUNISIAN_PROVIDER_PRIORITY.map(id => byId.get(id)).filter((provider): provider is Provider => Boolean(provider));
+    }
     return providers.filter(p => p.id === "paddle" || (p.checkoutAvailable && p.id === "stripe"));
   }, [providers, currency]);
   const readyProvider = availableProviders.find(p => currency === "TND" ? ["ipay", "clictopay", "laposte_d17"].includes(p.id) : p.id === "paddle");
