@@ -39,8 +39,12 @@ async function processTransactionPaid(data: Record<string, any>) {
     throw new Error("Paddle transaction reference does not match the local subscription intent.");
   }
   const currency = data.currency_code;
-  const amount = data.details?.totals?.total;
-  if (currency !== payment.currency || typeof amount !== "string" || !/^\d+$/.test(amount) || Number(amount) !== Number(payment.amount_minor)) {
+  const totals = data.details?.totals || {};
+  const subtotal = typeof totals.subtotal === "string" && /^\d+$/.test(totals.subtotal) ? Number(totals.subtotal) : NaN;
+  const discount = typeof totals.discount === "string" && /^\d+$/.test(totals.discount) ? Number(totals.discount) : 0;
+  // Paddle totals.subtotal is before discounts and tax; subtract discount,
+  // but do not compare tax-inclusive total to the product price.
+  if (currency !== payment.currency || !Number.isSafeInteger(subtotal) || subtotal - discount !== Number(payment.amount_minor)) {
     throw new Error("Paddle transaction amount or currency does not match the server-side payment intent.");
   }
   await markPaddlePaymentPaid(transactionId);
