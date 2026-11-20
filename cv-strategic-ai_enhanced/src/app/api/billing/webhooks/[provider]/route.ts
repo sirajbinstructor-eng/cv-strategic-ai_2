@@ -165,14 +165,18 @@ export async function POST(request: NextRequest, context: Context) {
     let eventRecordId = recorded.id;
     if (!recorded.inserted) {
       const existing = await pool.query(
-        "SELECT id,processing_status FROM billing_events WHERE provider='paddle' AND provider_event_id=$1 LIMIT 1",
+        "SELECT id,processing_status,received_at FROM billing_events WHERE provider='paddle' AND provider_event_id=$1 LIMIT 1",
         [event.eventId]
       );
       if (!existing.rowCount || existing.rows[0].processing_status === "processed") {
         return NextResponse.json({ received: true, duplicate: true });
       }
       if (existing.rows[0].processing_status === "received") {
-        return NextResponse.json({ error: "Event is already being processed." }, { status: 409 });
+        const receivedAt = new Date(existing.rows[0].received_at).getTime();
+        if (Number.isFinite(receivedAt) && Date.now() - receivedAt < 120_000) {
+          return NextResponse.json({ error: "Event is already being processed." }, { status: 409 });
+        }
+        await pool.query("UPDATE billing_events SET processing_status='failed',error_code='stale_processing_lease' WHERE id=$1 AND processing_status='received'", [existing.rows[0].id]);
       }
       eventRecordId = existing.rows[0].id;
     }
