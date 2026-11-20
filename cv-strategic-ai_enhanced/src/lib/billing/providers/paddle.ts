@@ -160,7 +160,7 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     const isSubscription = eventType.startsWith("subscription.");
     let status: VerifiedProviderEvent["status"] = "ignored";
     if (eventType === "transaction.paid" || eventType === "transaction.completed") status = "paid";
-    else if (eventType === "transaction.payment_failed" || eventType === "transaction.past_due") status = "failed";
+    else if (eventType === "transaction.payment_failed" || eventType === "transaction.past_due" || eventType === "transaction.canceled") status = "failed";
     else if (isSubscription) status = "subscription_updated";
     else if (eventType === "adjustment.created") status = "refunded";
 
