@@ -28,7 +28,6 @@ export const auth=betterAuth({
   isAdmin:{type:"boolean",required:false,defaultValue:false,input:false},
   isUnrestricted:{type:"boolean",required:false,defaultValue:false,input:false},
   consultantEntitled:{type:"boolean",required:false,defaultValue:false,input:false},
-  accountType:{type:"string",required:false,defaultValue:null,input:false},
   analysisTrialsGranted:{type:"number",required:false,defaultValue:3,input:false},
   analysisTrialsUsed:{type:"number",required:false,defaultValue:0,input:false},
   analysisTrialsReserved:{type:"number",required:false,defaultValue:0,input:false},
