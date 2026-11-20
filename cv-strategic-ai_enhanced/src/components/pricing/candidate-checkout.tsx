@@ -20,8 +20,7 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
       const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": window.crypto.randomUUID()
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ plan, interval, currency })
       });
