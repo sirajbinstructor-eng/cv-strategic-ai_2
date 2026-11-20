@@ -120,7 +120,6 @@ export class PaddleAdapter implements PaymentProviderAdapter {
     if (discountId) body.discount_id = discountId;
     const response = await paddleRequest("/transactions", {
       method: "POST",
-      headers: { "Idempotency-Key": input.idempotencyKey },
       body: JSON.stringify(body)
     });
     const transaction = response.data as PaddleJson | undefined;
