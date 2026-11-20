@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { ensureRecruiterBillingSchema } from "@/lib/db/ensure-recruiter-billing-schema";
 
 let bootstrapPromise: Promise<void> | undefined;
 
@@ -99,6 +100,6 @@ async function bootstrap(): Promise<void> {
 }
 
 export function ensureAuthSchema(): Promise<void> {
-  if (!bootstrapPromise) bootstrapPromise = bootstrap().catch((error) => { bootstrapPromise = undefined; throw error; });
+  if (!bootstrapPromise) bootstrapPromise = bootstrap().then(() => ensureRecruiterBillingSchema()).catch((error) => { bootstrapPromise = undefined; throw error; });
   return bootstrapPromise;
 }
