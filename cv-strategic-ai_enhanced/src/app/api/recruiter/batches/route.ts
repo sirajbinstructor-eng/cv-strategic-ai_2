@@ -14,7 +14,7 @@ export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=300;
 const requestSchema=z.object({
- pairs:z.array(z.object({cvId:z.string().min(1),jobDescriptionId:z.string().min(1)})).min(1).max(50),
+ pairs:z.array(z.object({cvId:z.string().min(1),jobDescriptionId:z.string().min(1)})).min(1).max(10),
  idempotencyKey:z.string().min(8).max(120).optional()
 });
 
@@ -89,7 +89,7 @@ export async function POST(request:NextRequest){
     await pool.query("UPDATE recruiter_batch_pairs SET status='failed',result=$2,completed_at=NOW() WHERE id=$1",[pair.id,JSON.stringify(encryptRecruiterPayload({error:message.slice(0,300)}))]);
    }
   };
-  // Keep Groq traffic bounded while avoiding a 50-request serial batch.
+  // Keep Groq traffic bounded for the selected single-axis workflow (maximum 10 evaluations).
   for(let index=0;index<pairRows.rows.length;index+=4){
    await Promise.all(pairRows.rows.slice(index,index+4).map(evaluatePair));
   }
