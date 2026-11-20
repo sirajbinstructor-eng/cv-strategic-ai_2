@@ -42,6 +42,8 @@ export class AdminUserRepository {
    if(!target.rowCount){await client.query("ROLLBACK");return "NOT_FOUND";}
    if(id===actor){await client.query("ROLLBACK");return "SELF_DELETE";}
    if(["siraj.b.instructor@gmail.com","cvstrategistai@gmail.com"].includes(String(target.rows[0].email).toLowerCase())){await client.query("ROLLBACK");return "PROTECTED";}
+   const ownedWorkspace=await client.query("SELECT id FROM recruiter_workspaces WHERE owner_user_id=$1 LIMIT 1",[id]);if(ownedWorkspace.rowCount){await client.query("ROLLBACK");return "WORKSPACE_OWNER";}
+   const paymentHistory=await client.query("SELECT id FROM payment_transactions WHERE user_id=$1 LIMIT 1",[id]);if(paymentHistory.rowCount){await client.query("ROLLBACK");return "PAYMENT_HISTORY";}
    if(target.rows[0].is_admin){const admins=await client.query('SELECT COUNT(*)::int AS total FROM "user" WHERE is_admin=true');if(admins.rows[0].total<=1){await client.query("ROLLBACK");return "LAST_ADMIN";}}
    await client.query('DELETE FROM "user" WHERE id=$1',[id]);await client.query("COMMIT");return "DELETED";
   }catch(error){await client.query("ROLLBACK").catch(()=>{});throw error;}finally{client.release();}
