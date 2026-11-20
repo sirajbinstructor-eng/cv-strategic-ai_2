@@ -109,9 +109,15 @@ export async function reserveAnalysisTrial(userId: string, mode: "analysis" | "c
     if (!update.rowCount) {
       await client.query("ROLLBACK");
       const entitlements = await getEntitlements(userId);
+      const granted = entitlements?.granted ?? 0;
+      const used = entitlements?.used ?? 0;
+      const reserved = entitlements?.reserved ?? 0;
+      const exhaustedMessage = used >= granted
+        ? `You have used all ${granted} free ${granted === 1 ? "analysis" : "analyses"}. Upgrade now for more!`
+        : `All remaining free analysis slots are currently in use (${used} completed, ${reserved} in progress, out of ${granted} granted). Please wait for processing to finish or upgrade for more.`;
       const error = new Error(entitlements?.expired
         ? "The free launch offer expired on 31 December 2026. Upgrade to continue."
-        : "You have used all 3 free analyses. Upgrade now for more!");
+        : exhaustedMessage);
       Object.assign(error, { status: 402, code: "TRIAL_EXHAUSTED" });
       throw error;
     }
