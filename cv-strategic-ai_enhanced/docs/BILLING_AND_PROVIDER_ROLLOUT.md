@@ -46,7 +46,7 @@ The presence of a provider in this table does not mean it is integrated, approve
 
 Provider credentials must be configured in the deployment platform, never committed to source control or pasted into chat.
 
-- Paddle sandbox: `PADDLE_ENVIRONMENT=sandbox`, `BILLING_PADDLE_SANDBOX_ENABLED=true`; then configure  `PADDLE_ENVIRONMENT=sandbox`, `PADDLE_API_KEY` (sandbox key), `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `BILLING_PADDLE_SANDBOX_ENABLED=true`, `BILLING_PROVIDER_PADDLE_ENABLED=true`, and the eight `PADDLE_PRICE_{PRO|CONSULTANT}_{MONTHLY|ANNUAL}_{USD|EUR}` price IDs. Configure `PADDLE_DISCOUNT_10_ID`, `PADDLE_DISCOUNT_20_ID` and `PADDLE_DISCOUNT_40_ID` for approved discounts.
+- Paddle sandbox: set `PADDLE_ENVIRONMENT=sandbox`, `BILLING_PADDLE_SANDBOX_ENABLED=true`, and `BILLING_PROVIDER_PADDLE_ENABLED=true`; configure `PADDLE_API_KEY` (sandbox key), `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, and the eight `PADDLE_PRICE_{PRO|CONSULTANT}_{MONTHLY|ANNUAL}_{USD|EUR}` price IDs. Configure `PADDLE_DISCOUNT_10_ID`, `PADDLE_DISCOUNT_20_ID` and `PADDLE_DISCOUNT_40_ID` for approved recurring discounts.
 - Paddle live: additionally require `PADDLE_ENVIRONMENT=live`, `BILLING_PADDLE_MERCHANT_APPROVED=true` and `BILLING_PADDLE_SANDBOX_VERIFIED=true`.
 - Flouci: `FLOUCI_APP_TOKEN`, `FLOUCI_APP_SECRET`, `FLOUCI_WEBHOOK_SECRET`, `BILLING_FLOUCI_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_FLOUCI_ENABLED=true`
 - Konnect: `KONNECT_API_KEY`, `KONNECT_WEBHOOK_SECRET`, `BILLING_KONNECT_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_KONNECT_ENABLED=true`
