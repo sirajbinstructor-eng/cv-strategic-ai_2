@@ -122,6 +122,7 @@ export async function POST(request: NextRequest, context: Context) {
       }
       eventRecordId = existing.rows[0].id;
     }
+    if (!eventRecordId) return NextResponse.json({ error: "Unable to register webhook event." }, { status: 503 });
     try {
       const data = event.data || {};
       if (event.rawType === "transaction.paid" || event.rawType === "transaction.completed") {
