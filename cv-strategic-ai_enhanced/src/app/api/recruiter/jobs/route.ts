@@ -10,7 +10,7 @@ const jobSchema=z.object({title:z.string().trim().min(2).max(160),department:z.s
 
 export async function GET(){
  try{const user=await requireUser();const access=await requireRecruiterAccess(user.id);const {pool}=await import("@/lib/db");
-  const r=await pool.query("SELECT id,title,department,location,employment_type,status,length(description)::int AS description_length,created_at,updated_at FROM recruiter_job_descriptions WHERE workspace_id=$1 ORDER BY created_at DESC",[access.workspaceId]);
+  const r=await pool.query("SELECT id,title,department,location,employment_type,status,description,length(description)::int AS description_length,created_at,updated_at FROM recruiter_job_descriptions WHERE workspace_id=$1 ORDER BY created_at DESC",[access.workspaceId]);
   return NextResponse.json({jobs:r.rows},{headers:{"Cache-Control":"no-store"}});
  }catch(error){const e=error as {message?:string;status?:number};return NextResponse.json({error:e.message||"Unable to load jobs."},{status:e.status||500});}
 }
