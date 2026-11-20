@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
   const session = await getCurrentSession();
   if (!session?.user?.id) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   await ensureAuthSchema();
-  const body = await request.json().catch(() => ({}));
+  const parsedBody = await request.json().catch(() => ({}));
+  const body = parsedBody && typeof parsedBody === "object" ? parsedBody as Record<string, unknown> : {};
   const accountType = body.accountType;
   const workspaceName = typeof body.workspaceName === "string" ? body.workspaceName.trim() : "";
   if (accountType !== "job_seeker" && accountType !== "recruiter") return NextResponse.json({ error: "Choose Job Seeker or HR / Recruiter / Company." }, { status: 400 });
