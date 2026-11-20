@@ -34,7 +34,7 @@ export const auth=betterAuth({
   analysisTrialExpiresAt:{type:"date",required:false,defaultValue:new Date("2026-12-31T23:00:00.000Z"),input:false}
  }},
  databaseHooks:{user:{
-  create:{before:async user=>{const email=String(user.email||"").trim().toLowerCase(),approved=isApprovedAdmin(email);return {data:{...user,email,isAdmin:approved,isUnrestricted:approved}};}}
+  create:{before:async user=>{const email=String(user.email||"").trim().toLowerCase(),approved=isApprovedAdmin(email);return {data:{...user,email,isAdmin:approved,isUnrestricted:approved,consultantEntitled:approved}};}}
  }},
  advanced:{database:{generateId:()=>randomUUID()},useSecureCookies:process.env.NODE_ENV==="production"},
  rateLimit:{enabled:true,window:60,max:100}

@@ -353,7 +353,7 @@ export function AuthPanel({
             </h2>
             <p className="muted">
               {mode === "signup"
-                ? "Start with three free AI analyses."
+                ? "Create your account, then choose a Job Seeker or Recruiter workspace."
                 : "Sign in to continue your CV strategy."}
             </p>
           </div>

@@ -29,7 +29,7 @@ export function canGenerateCv(entitlements: Pick<EntitlementSnapshot, "unlimited
 export function toEntitlementSnapshot(row: Record<string, unknown>): EntitlementSnapshot {
   const isAdmin = Boolean(row.is_admin);
   const isUnrestricted = Boolean(row.is_unrestricted);
-  const consultantEntitled = Boolean(row.consultant_entitled);
+  const consultantEntitled = Boolean(row.consultant_entitled) || Boolean(row.is_admin) || Boolean(row.is_unrestricted);
   const granted = Number(row.analysis_trials_granted ?? 3);
   const used = Number(row.analysis_trials_used ?? 0);
   const reserved = Number(row.analysis_trials_reserved ?? 0);
@@ -57,13 +57,13 @@ export async function getEntitlements(userId: string): Promise<EntitlementSnapsh
   const snapshot=toEntitlementSnapshot(result.rows[0]);
   const paid=await getBillingEntitlements(userId);
   if(!paid)return snapshot;
-  return {...snapshot,consultantEntitled:paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
+  return {...snapshot,consultantEntitled:snapshot.isAdmin||snapshot.isUnrestricted||paid.plan==="consultant",granted:paid.analyses.limit,used:paid.analyses.used,reserved:paid.analyses.reserved,remaining:paid.analyses.remaining,expired:false,workspaceLocked:false,expiresAt:paid.periodEnd,subscription:{plan:paid.plan,interval:paid.interval,status:paid.status,analyses:paid.analyses,generations:paid.generations,periodEnd:paid.periodEnd}};
 }
 
 export type TrialReservation = { id: string; bypassed: boolean; source?: "trial" | "subscription" };
 
 /** Reserve one slot before invoking Groq. The conditional UPDATE prevents concurrent overspending. */
-export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "consultant" = "automatic"): Promise<TrialReservation> {
+export async function reserveAnalysisTrial(userId: string, mode: "analysis" | "consulting" = "analysis"): Promise<TrialReservation> {
   const paidReservation = await reserveSubscriptionAnalysis(userId, mode);
   if (paidReservation) return { id: paidReservation.id, bypassed: false, source: "subscription" };
   const client = await pool.connect();
@@ -132,7 +132,7 @@ export async function reserveAnalysisTrial(userId: string, mode: "automatic" | "
 export async function completeAnalysisTrial(
   userId: string,
   reservation: TrialReservation,
-  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "automatic" | "consultant" }
+  record: { id: string; targetTitle: string | null; matchScore: number; result: Record<string, unknown>; mode?: "analysis" | "consulting" }
 ): Promise<void> {
   const client = await pool.connect();
   try {
@@ -160,7 +160,7 @@ export async function completeAnalysisTrial(
     await client.query(
       `INSERT INTO analysis_records (id, user_id, mode, target_title, match_score, result)
        VALUES ($1, $2, $6, $3, $4, $5::jsonb)`,
-      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "automatic"]
+      [record.id, userId, record.targetTitle, record.matchScore, JSON.stringify(record.result), record.mode || "analysis"]
     );
     await client.query("COMMIT");
   } catch (error) {

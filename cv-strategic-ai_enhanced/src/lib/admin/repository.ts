@@ -1,7 +1,7 @@
 import {randomUUID} from "node:crypto";
 import {pool} from "@/lib/db";
 import type {UpdateInput} from "./model";
-const cols="id,name,email,email_verified,created_at,updated_at,is_admin,is_unrestricted,consultant_entitled,analysis_trials_granted,analysis_trials_used,analysis_trials_reserved,analysis_trial_expires_at";
+const cols="id,name,email,email_verified,created_at,updated_at,is_admin,is_unrestricted,consultant_entitled,account_type,analysis_trials_granted,analysis_trials_used,analysis_trials_reserved,analysis_trial_expires_at";
 export class AdminUserRepository {
  async list(x:{q?:string;role:string;limit:number;offset:number}) {
   const vals:unknown[]=[];const where:string[]=[];
@@ -15,8 +15,10 @@ export class AdminUserRepository {
  async get(id:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE id=$1',[id]);return r.rows[0]||null;}
  async byEmail(email:string){const r=await pool.query('SELECT '+cols+' FROM "user" WHERE lower(email)=lower($1)',[email]);return r.rows[0]||null;}
  async update(id:string,x:UpdateInput){
-  const map:Record<string,string>={name:"name",email:"email",emailVerified:"email_verified",isAdmin:"is_admin",isUnrestricted:"is_unrestricted",consultantEntitled:"consultant_entitled",analysisTrialsGranted:"analysis_trials_granted"};
-  const entries=Object.entries(x).filter(([key])=>map[key]);if(!entries.length)return this.get(id);
+  const map:Record<string,string>={name:"name",email:"email",emailVerified:"email_verified",isAdmin:"is_admin",isUnrestricted:"is_unrestricted",consultantEntitled:"consultant_entitled",accountType:"account_type",analysisTrialsGranted:"analysis_trials_granted"};
+  const normalized={...x};
+  if(normalized.isAdmin===true){normalized.isUnrestricted=true;normalized.consultantEntitled=true;}
+  const entries=Object.entries(normalized).filter(([key])=>map[key]);if(!entries.length)return this.get(id);
   const client=await pool.connect();
   try{
    await client.query("BEGIN");
@@ -40,6 +42,8 @@ export class AdminUserRepository {
    if(!target.rowCount){await client.query("ROLLBACK");return "NOT_FOUND";}
    if(id===actor){await client.query("ROLLBACK");return "SELF_DELETE";}
    if(["siraj.b.instructor@gmail.com","cvstrategistai@gmail.com"].includes(String(target.rows[0].email).toLowerCase())){await client.query("ROLLBACK");return "PROTECTED";}
+   const ownedWorkspace=await client.query("SELECT id FROM recruiter_workspaces WHERE owner_user_id=$1 LIMIT 1",[id]);if(ownedWorkspace.rowCount){await client.query("ROLLBACK");return "WORKSPACE_OWNER";}
+   const paymentHistory=await client.query("SELECT id FROM payment_transactions WHERE user_id=$1 LIMIT 1",[id]);if(paymentHistory.rowCount){await client.query("ROLLBACK");return "PAYMENT_HISTORY";}
    if(target.rows[0].is_admin){const admins=await client.query('SELECT COUNT(*)::int AS total FROM "user" WHERE is_admin=true');if(admins.rows[0].total<=1){await client.query("ROLLBACK");return "LAST_ADMIN";}}
    await client.query('DELETE FROM "user" WHERE id=$1',[id]);await client.query("COMMIT");return "DELETED";
   }catch(error){await client.query("ROLLBACK").catch(()=>{});throw error;}finally{client.release();}

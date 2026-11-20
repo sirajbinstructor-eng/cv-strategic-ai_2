@@ -15,13 +15,14 @@ This is a migration from the previous Express + plain JavaScript application. Th
 - PostgreSQL 18-compatible schema and initial Drizzle migration.
 - Three successful Analysis-mode trials per eligible account, expiring at the end of 31 December 2026 in `Africa/Tunis`.
 - Atomic trial reservations: concurrent requests cannot spend more trials than the account has. Failed AI requests release their reservation.
-- Admin and unrestricted accounts bypass the Analysis trial cap. Privileged roles are never accepted from browser input.
+- Admin and unrestricted accounts bypass all candidate analysis and CV-generation quotas and can use both Analysis and Consulting modes. Privileged roles are never accepted from browser input.
+- New users choose a Job Seeker or HR / Recruiter / Company account type after sign-in. Recruiter selection provisions a company-owned workspace.
 - Analysis mode uses Groq only. The `openai` SDK is used only as a Groq-compatible HTTP client with `https://api.groq.com/openai/v1`.
 - DOCX and text-PDF CV extraction (scanned PDF OCR is not included).
 - Evidence-oriented analysis and ATS-friendly DOCX and PDF generation. PDF uses embedded Noto Sans fonts for selectable text and French accents.
 - Evidence-status scoring normalization: fractional scores such as `0.68` are converted to `68`, category coverage is recalculated from evidence statuses, and the overall estimate is recomputed with fixed weights (mandatory 35%, responsibilities 25%, technical skills 20%, tools/methods 10%, seniority/leadership 10%).
 - Raw extracted CV text is held in browser memory for the active session and is not stored in PostgreSQL. Structured analysis results and usage records are stored.
-- Consultant mode is visibly marked as paid and remains locked in this foundation release. Its entitlement field is reserved for the later Consultant workflow and payment integration.
+- Consulting is an application mode, separate from the commercial offers. It is available to administrators/unrestricted accounts and eligible Gold subscribers. Pro and Gold are the candidate offers; the internal billing identifier `consultant` remains stable for existing subscriptions.
 
 ## Important implementation boundaries
 
@@ -111,7 +112,7 @@ Do not connect this new version to the current live service until the migration 
    CONFIRM_ADMIN_PROMOTION=YES npx tsx scripts/promote-admin.ts your-owner-email@example.com --unrestricted
    ```
 
-This command updates an existing user only. It does not create accounts and does not expose a web endpoint for privilege escalation. Admin and unrestricted accounts bypass the three Analysis trials. Consultant mode remains a separate entitlement and is not activated in this foundation release.
+This command updates an existing user only. It does not create accounts and does not expose a web endpoint for privilege escalation. Admin and unrestricted accounts bypass the three Analysis trials. Consulting mode remains a separate entitlement and is not activated in this foundation release.
 
 Do not give the `--unrestricted` flag to ordinary testers. To grant/revoke the unrestricted trial exemption for an already registered test account, use Render Shell:
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PLAN_CATALOG, PLAN_QUOTAS, formatPrice, type BillingCurrency, type BillingPlan, type BillingInterval } from "@/lib/billing/catalog";
+import { PLAN_CATALOG, PLAN_QUOTAS, PLAN_DISPLAY_NAMES, formatPrice, type BillingCurrency, type BillingPlan, type BillingInterval } from "@/lib/billing/catalog";
 import { CandidateCheckoutActions } from "@/components/pricing/candidate-checkout";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ function PricingComparison({ plan }: { plan: BillingPlan }) {
       <div className="pricing-plan-heading">
         <div>
           <div className="pricing-plan-kicker">{isPro ? "FOR INDIVIDUAL CANDIDATES" : "FOR HIGH-VOLUME PROFESSIONALS"}</div>
-          <h2 id={`plan-title-${plan}`}>{isPro ? "Pro" : "Consultant"}</h2>
+          <h2 id={`plan-title-${plan}`}>{PLAN_DISPLAY_NAMES[plan]}</h2>
           <p>{isPro ? "For individual candidates working on several opportunities." : "For high-volume candidates and professional career support."}</p>
         </div>
         <div className={`pricing-plan-icon pricing-plan-icon--${plan}`} aria-hidden="true">{isPro ? "✦" : "◆"}</div>
@@ -83,11 +83,11 @@ function PricingComparison({ plan }: { plan: BillingPlan }) {
         <span className="pricing-footnote-icon" aria-hidden="true">ⓘ</span>
         <p>{isPro
           ? "Annual Pro includes 300 analyses and 250 CV generations, allocated at the start of your billing year. Unused annual quota does not roll over."
-          : "Annual Consultant includes 1,300 analyses and 1,300 CV generations, allocated at the start of your billing year. Unused annual quota does not roll over."}</p>
+          : "Annual Gold includes 1,300 analyses and 1,300 CV generations, allocated at the start of your billing year. Unused annual quota does not roll over."}</p>
       </div>
       <div className="pricing-plan-action">
         <span>Ready when you are</span>
-        <a href={`#checkout-${plan}`} className="pricing-choose-link">Choose {isPro ? "Pro" : "Consultant"} <span aria-hidden="true">→</span></a>
+        <a href={`#checkout-${plan}`} className="pricing-choose-link">Choose {PLAN_DISPLAY_NAMES[plan]} <span aria-hidden="true">→</span></a>
       </div>
       <div id={`checkout-${plan}`} className="pricing-checkout-anchor">
         <CandidateCheckoutActions plan={plan} />

@@ -45,15 +45,16 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const file = form.get("cv");
     const jobDescription = cleanText(String(form.get("jobDescription") || ""));
-    const mode = String(form.get("mode") || "automatic");
+    const requestedMode = String(form.get("mode") || "analysis");
+    const mode = requestedMode === "automatic" ? "analysis" : requestedMode === "consultant" ? "consulting" : requestedMode;
 
-    if (mode !== "automatic" && mode !== "consultant") {
+    if (mode !== "analysis" && mode !== "consulting") {
       return NextResponse.json({ error: "Unsupported analysis mode." }, { status: 400 });
     }
-    if (mode === "consultant") {
+    if (mode === "consulting") {
       const currentEntitlements = await getEntitlements(userId);
-      if (!currentEntitlements || (!currentEntitlements.isAdmin && !currentEntitlements.isUnrestricted && currentEntitlements.subscription?.plan !== "consultant")) {
-        return NextResponse.json({ error: "Consultant mode requires an active Consultant subscription." }, { status: 403 });
+      if (!currentEntitlements || (!currentEntitlements.isAdmin && !currentEntitlements.isUnrestricted && !currentEntitlements.consultantEntitled && currentEntitlements.subscription?.plan !== "consultant")) {
+        return NextResponse.json({ error: "Consulting mode requires Gold access or administrator privileges." }, { status: 403 });
       }
     }
 
@@ -81,11 +82,11 @@ export async function POST(request: NextRequest) {
     const cvText = await extractCvText(file);
 
     // Reserve atomically before spending on the AI request.
-    reservation = await reserveAnalysisTrial(userId, mode as "automatic" | "consultant");
+    reservation = await reserveAnalysisTrial(userId, mode as "analysis" | "consulting");
 
     const raw = await askGroqForJson<unknown>(
       ANALYSIS_SYSTEM_PROMPT,
-      `JOB DESCRIPTION:\n${jobDescription}\n\nSOURCE CV:\n${cvText}\n\nProduce the complete structured analysis. The analysis must be mode-independent. Prepare questions, tips and cautions, but the Automatic interface will not display consultant-only guidance.`
+      `JOB DESCRIPTION:\n${jobDescription}\n\nSOURCE CV:\n${cvText}\n\nProduce the complete structured analysis. The assessment must remain evidence-based and must not invent candidate facts. In Consulting mode, provide more detailed coaching explanations and actionable follow-up guidance; in Analysis mode, provide a concise assessment. The selected mode controls the presentation and depth, not the factual scoring.`
     );
 
     const analysis = applyDeterministicScoring(
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       targetTitle: analysis.targetTitle || null,
       matchScore: analysis.match.score,
       result: analysis as unknown as Record<string, unknown>,
-      mode: mode as "automatic" | "consultant"
+      mode: mode as "analysis" | "consulting"
     });
 
     let entitlements = null;

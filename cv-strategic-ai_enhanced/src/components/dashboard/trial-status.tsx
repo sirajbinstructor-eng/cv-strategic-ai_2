@@ -9,7 +9,7 @@ type Entitlements = {
 
 export function TrialStatus({ entitlements, onUpgrade }: { entitlements: Entitlements; onUpgrade: () => void }) {
   const content = (() => {
-    if (entitlements.subscription) return { title: `${entitlements.subscription.plan === "pro" ? "Pro" : "Consultant"} subscription active`, body: `${entitlements.subscription.analyses.remaining} analyses and ${entitlements.subscription.generations.remaining} CV generations remain in this billing period. Your quotas renew on ${new Date(entitlements.subscription.periodEnd).toLocaleDateString()}.`, tone: "success" };
+    if (entitlements.subscription) return { title: `${entitlements.subscription.plan === "pro" ? "Pro" : "Gold"} subscription active`, body: `${entitlements.subscription.analyses.remaining} analyses and ${entitlements.subscription.generations.remaining} CV generations remain in this billing period. Your quotas renew on ${new Date(entitlements.subscription.periodEnd).toLocaleDateString()}.`, tone: "success" };
     if (entitlements.unlimited) return { title: "Unrestricted access", body: "Your account is exempt from the free-trial limit.", tone: "success" };
     if (entitlements.expired) return { title: "Your free launch offer has ended.", body: "The offer expired on 31 December 2026. Upgrade to continue using CV Strategist AI.", tone: "warning" };
     if (entitlements.used >= 3) return {
@@ -28,7 +28,7 @@ export function TrialStatus({ entitlements, onUpgrade }: { entitlements: Entitle
       <div className="trial-action">
         {!entitlements.unlimited && !entitlements.subscription && !entitlements.workspaceLocked && <span className="trial-count">{entitlements.remaining} of {entitlements.granted} left</span>}
         {entitlements.workspaceLocked && !entitlements.unlimited && <button className="button-primary" type="button" onClick={onUpgrade}>Upgrade now for more! <span aria-hidden="true">→</span></button>}
-        {entitlements.subscription && <span className="access-pill">{entitlements.subscription.plan.toUpperCase()}</span>}
+        {entitlements.subscription && <span className="access-pill">{entitlements.subscription.plan === "consultant" ? "GOLD" : "PRO"}</span>}
         {entitlements.unlimited && <span className="access-pill">Unlimited</span>}
       </div>
     </section>

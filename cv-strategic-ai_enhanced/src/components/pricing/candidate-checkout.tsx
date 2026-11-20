@@ -117,7 +117,7 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
       <div style={styles.header}>
         <div>
           <p style={styles.eyebrow}>SECURE CHECKOUT</p>
-          <h3 id={`checkout-title-${plan}`} style={styles.title}>Get started with {plan === "pro" ? "Pro" : "Consultant"}</h3>
+          <h3 id={`checkout-title-${plan}`} style={styles.title}>Get started with {plan === "pro" ? "Pro" : "Gold"}</h3>
           <p style={styles.muted}>Choose your billing preference. We'll clearly distinguish available payment methods from those still being onboarded.</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, color: "var(--muted, #64748b)", fontSize: 11, fontWeight: 650 }}>
@@ -139,7 +139,7 @@ export function CandidateCheckoutActions({ plan }: { plan: BillingPlan }) {
       </div>
 
       <div style={styles.price} aria-live="polite">
-        <div><p style={styles.eyebrow}>YOUR SELECTED PLAN</p><p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 700 }}>{plan === "pro" ? "Pro" : "Consultant"} · {interval === "monthly" ? "Monthly billing" : "Annual billing"}</p></div>
+        <div><p style={styles.eyebrow}>YOUR SELECTED PLAN</p><p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 700 }}>{plan === "pro" ? "Pro" : "Gold"} · {interval === "monthly" ? "Monthly billing" : "Annual billing"}</p></div>
         <div style={{ textAlign: "right" }}><div style={styles.priceValue}>{formatPrice(price)}</div><p style={styles.muted}>{interval === "monthly" ? "per month" : "per year"} · {currency}</p></div>
       </div>
 

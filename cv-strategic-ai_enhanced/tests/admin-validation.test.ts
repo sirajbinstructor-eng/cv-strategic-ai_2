@@ -9,3 +9,5 @@ test("user list defaults pagination and role",()=>{assert.deepEqual(listSchema.p
 test("user list rejects an excessive page size",()=>{assert.equal(listSchema.safeParse({limit:101}).success,false);});
 test("user update rejects an empty payload",()=>{assert.equal(updateSchema.safeParse({}).success,false);});
 test("user update accepts explicit entitlement changes",()=>{assert.equal(updateSchema.safeParse({isAdmin:true,isUnrestricted:false,analysisTrialsGranted:8}).success,true);});
+test("user update accepts Job Seeker and Recruiter account types",()=>{assert.equal(updateSchema.safeParse({accountType:"job_seeker"}).success,true);assert.equal(updateSchema.safeParse({accountType:"recruiter"}).success,true);});
+test("user update rejects unsupported account types",()=>{assert.equal(updateSchema.safeParse({accountType:"candidate"}).success,false);});
