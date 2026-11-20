@@ -29,6 +29,12 @@ test("new Tunisian payment providers are disabled by default", () => isolatedEnv
 }));
 test("credentials and flags cannot enable a Tunisian provider without an implemented adapter", () => isolatedEnvironment(() => {
   for (const key of envKeys) process.env[key] = "placeholder-test-value";
+  process.env.BILLING_PROVIDER_IPAY_ENABLED = "true";
+  process.env.BILLING_PROVIDER_CLICTOPAY_ENABLED = "true";
+  process.env.BILLING_PROVIDER_LAPOSTE_D17_ENABLED = "true";
+  process.env.BILLING_IPAY_MERCHANT_APPROVED = "true";
+  process.env.BILLING_CLICTOPAY_MERCHANT_APPROVED = "true";
+  process.env.BILLING_LAPOSTE_MERCHANT_APPROVED = "true";
   for (const id of ids) {
     const readiness = getPaymentProviderReadinessById(id);
     assert.equal(readiness.status, "adapter_not_implemented");
