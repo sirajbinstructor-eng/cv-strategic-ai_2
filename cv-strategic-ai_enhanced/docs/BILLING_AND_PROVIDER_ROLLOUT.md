@@ -33,6 +33,8 @@ All providers are disabled by default. The readiness endpoint never exposes cred
 | --- | --- | --- |
 | Paddle | International SaaS Merchant of Record | Tunisian merchant acceptance, payout route, currencies, subscription and one-time product setup, webhook contract |
 | Flouci (direct) | First direct Tunisian one-time checkout | Merchant approval, TND settlement, signed webhook + server-side verification; recurring contract required before automatic subscriptions |
+| ClicToPay / SMT (direct) | Second direct Tunisian route | Acquiring-bank merchant agreement, official API pack, test host, callback/status verification and SMT certification |
+| La Poste MPGS (direct) | Third direct Tunisian route | Official merchant kit, supported hosted/API flow, settlement and callback verification; D17 web checkout must be confirmed separately |
 | Konnect | Tunisian checkout | Merchant approval, supported currencies, recurring support; one-time use until recurring is verified |
 | iPay (optional aggregator fallback) | Additional route only when its convenience outweighs its additional cost | Merchant approval, total fee quotation, callback authentication or trusted status query, manual-vs-electronic payment distinction, settlement and sandbox |
 | Paymee | Additional Tunisian checkout | Merchant approval, current API documentation, supported currencies and webhook security |
@@ -50,7 +52,7 @@ Provider credentials must be configured in the deployment platform, never commit
 - Paddle live: additionally require `PADDLE_ENVIRONMENT=live`, `BILLING_PADDLE_MERCHANT_APPROVED=true` and `BILLING_PADDLE_SANDBOX_VERIFIED=true`. Replace the sandbox API key, client token, webhook destination secret, all eight price IDs and three discount IDs with their live-environment equivalents, then redeploy.
 - Flouci (reserved; adapter not implemented): `FLOUCI_PUBLIC_KEY`, `FLOUCI_PRIVATE_KEY`, `BILLING_FLOUCI_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_FLOUCI_ENABLED=true`. The private key is also used for the documented webhook HMAC; no separate webhook secret is required by the public API contract.
 - Konnect: `KONNECT_API_KEY`, `KONNECT_WEBHOOK_SECRET`, `BILLING_KONNECT_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_KONNECT_ENABLED=true`
-- iPay (reserved names; do not configure until its authenticated merchant API contract is reviewed): `IPAY_ORG_ID`, `IPAY_API_TOKEN`, `IPAY_WEBHOOK_SECRET`, `BILLING_IPAY_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_IPAY_ENABLED=true`. See `docs/TUNISIAN_PAYMENT_INTEGRATIONS.md`.
+- iPay (optional fallback; adapter not implemented and security contract incomplete): `IPAY_ORG_ID`, `IPAY_API_TOKEN`, `BILLING_IPAY_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_IPAY_ENABLED=true`. Do not invent/configure `IPAY_WEBHOOK_SECRET`: the supplied merchant documentation does not specify a webhook signature secret or verification algorithm. iPay remains disabled until it supplies an authenticated callback or trusted status-verification contract. See `docs/TUNISIAN_PAYMENT_INTEGRATIONS.md`.
 - Paymee: `PAYMEE_API_KEY`, `PAYMEE_WEBHOOK_SECRET`, `BILLING_PAYMEE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_PAYMEE_ENABLED=true`
 - Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BILLING_STRIPE_MERCHANT_APPROVED=true`, `BILLING_PROVIDER_STRIPE_ENABLED=true`
 
