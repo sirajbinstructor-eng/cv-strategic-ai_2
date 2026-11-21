@@ -74,10 +74,9 @@ export function DashboardShell() {
         <div className="header-actions">
           <span className="user-chip">{user.name || user.email}</span>
           {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
-          {!entitlements.isAdmin && user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">Plans & pricing</Link>}
+          {user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">{entitlements.isAdmin ? "Upgrade" : "Plans & pricing"}</Link>}
           {user.accountType === "job_seeker" && <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>}
           <Link href="/dashboard/settings" className="header-link">Account settings</Link>
-          {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
           <button className="button-quiet" onClick={signOut}>Sign out</button>
         </div>
       </header>
