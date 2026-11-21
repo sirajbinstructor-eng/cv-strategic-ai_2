@@ -23,7 +23,7 @@ type AccountPayload = {
 export function DashboardShell() {
   const router = useRouter();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [adminWorkspaceSelected, setAdminWorkspaceSelected] = useState(false);
+  const [adminWorkspaceSelected] = useState(true);
   const accountQuery = useQuery({
     queryKey: ["account"],
     queryFn: async () => {
@@ -46,9 +46,7 @@ export function DashboardShell() {
   if ((!accountQuery.data && accountQuery.isError) || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
 
   const { user, entitlements } = accountQuery.data;
-  const mustChooseWorkspace = entitlements.isAdmin
-    ? !adminWorkspaceSelected
-    : !user.accountType;
+  const mustChooseWorkspace = !entitlements.isAdmin && !user.accountType;
 
   if (mustChooseWorkspace) {
     return (
@@ -77,7 +75,7 @@ export function DashboardShell() {
         <Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Intelligent career positioning</small></span></Link>
         <div className="header-actions">
           <span className="user-chip">{user.name || user.email}</span>
-          {entitlements.isAdmin && <button className="button-quiet" onClick={() => setAdminWorkspaceSelected(false)}>Switch workspace</button>}
+          {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
           {!entitlements.isAdmin && user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">Plans & pricing</Link>}
           {user.accountType === "job_seeker" && <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>}
           <Link href="/dashboard/settings" className="header-link">Account settings</Link>
