@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <nav className="admin-header-nav" aria-label="Administration">
         <Link href="/admin" className="admin-nav-link">Overview</Link><Link href="/admin/users" className="admin-nav-link">Users</Link><Link href="/admin/subscriptions" className="admin-nav-link">Billing</Link><Link href="/admin/discounts" className="admin-nav-link">Discounts</Link><Link href="/admin/api-docs" className="admin-nav-link">API docs</Link>
       </nav>
-      <div className="admin-header-actions">
+      <div className="header-actions">
         <Link href="/admin" className="admin-workspace-link">Admin home</Link>
         <AdminHeaderActions />
       </div>
