@@ -23,7 +23,6 @@ type AccountPayload = {
 export function DashboardShell() {
   const router = useRouter();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [adminWorkspaceSelected] = useState(true);
   const accountQuery = useQuery({
     queryKey: ["account"],
     queryFn: async () => {
