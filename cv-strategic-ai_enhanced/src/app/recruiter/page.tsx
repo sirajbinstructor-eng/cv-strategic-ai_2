@@ -16,15 +16,15 @@ export default async function RecruiterPage() {
   return (
     <main className="dashboard-page recruiter-page">
       <header className="dashboard-header">
-        <Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Recruiter workspace</small></span></Link>
+        <Link className="brand" href="/recruiter"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Company workspace</small></span></Link>
         <div className="header-actions">
           {isAdmin && <Link className="header-link" href="/admin">Admin dashboard</Link>}
-          <Link className="header-link" href="/dashboard">{isAdmin ? "Switch workspace" : "Candidate dashboard"}</Link>
+          {isAdmin && <Link className="header-link" href="/dashboard">Switch product</Link>}
         </div>
       </header>
       <div className="dashboard-main recruiter-dashboard-main">
         <RecruiterWorkspaceClient />
-        <footer className="dashboard-footer"><span>CV Strategist AI · Recruiter workspace</span><Link href="/dashboard">← Back to dashboard</Link></footer>
+        <footer className="dashboard-footer"><span>CV Strategist AI · Company workspace</span>{isAdmin && <Link href="/dashboard">Switch product</Link>}</footer>
       </div>
     </main>
   );
