@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/server-session";
 import { pool } from "@/lib/db";
 import { RecruiterWorkspaceClient } from "@/components/recruiter/recruiter-workspace";
+import { RecruiterHeaderActions } from "@/components/recruiter/recruiter-header-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function RecruiterPage() {
         <Link className="brand" href="/recruiter"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Company workspace</small></span></Link>
         <div className="header-actions">
           {isAdmin && <Link className="header-link" href="/admin">Admin dashboard</Link>}
+          <RecruiterHeaderActions />
         </div>
       </header>
       <div className="dashboard-main recruiter-dashboard-main">
