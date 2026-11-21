@@ -6,7 +6,7 @@
 
 ## 1. Approved company subscription catalogue
 
-Company billing is a separate product from Job Seeker Pro / Gold. Company subscriptions belong to a company tenant/workspace, never to an individual employee account.
+HR/company billing is a fully separate B2B product with its own company account lifecycle, company tenant/workspace, commercial catalogue, eligibility verification, subscription lifecycle, seats, shared credits, billing and administration. Once operating in the HR/company product, the user is working in the company workspace; candidate-account and candidate-workspace concepts do not apply to this workflow. Company subscriptions belong to the legal company entity, never to an individual employee account. The Job Seeker product remains a separate product with separate account, workspace, pricing and entitlement rules.
 
 ### Monthly subscriptions
 
@@ -43,6 +43,8 @@ Prices are fixed per currency. Do not dynamically convert prices at checkout.
 
 ### Approved startup and SME discounts
 
+Discount eligibility is a company-level B2B verification workflow. Do not ask whether the HR user is a student, do not use student status as a qualification route, and do not determine eligibility from an individual's personal profile. The applicant represents a registered legal business; verification is performed against that business's official registration and supporting company documents.
+
 The following discounts apply to paid HR/company subscription plans (Starter, Growth and Business), for both monthly and annual billing, against the corresponding published list price:
 
 | Eligible company category | Discount |
@@ -54,12 +56,16 @@ The following discounts apply to paid HR/company subscription plans (Starter, Gr
 Discount rules:
 - Discounts are **mutually exclusive**. A company may receive only one of these discounts on a subscription; percentages must never be added together or compounded.
 - If a company qualifies for more than one category, apply only the single highest eligible discount: Tunisian startup 20%, other-country startup 15%, or SME 10%.
-- A company must satisfy and verify the selected category before the discounted first purchase is issued. Verification may be completed by document upload and/or manual admin review; do not grant a discount based only on a user-selected checkbox or unverified claim.
+- A company must satisfy and verify the selected category before the discounted first purchase is issued. The company submits its legal identity and supporting official documents through the HR/company billing workflow. Verification may be completed by secure document upload and manual admin review; do not grant a discount based only on a user-selected checkbox or unverified claim.
+- **Tunisian company registration:** require the company's official Registre National des Entreprises (RNE) extract / registre de commerce (or the legally applicable official registration evidence) to establish the registered legal entity, registration identifier and country. The verified legal entity is the customer and the unit for discount eligibility and lifetime redemption.
+- **Tunisian startup (20%):** require proof that the registered Tunisian company qualifies as a startup, preferably the official Startup Label or equivalent official company-level recognition, together with the company's registration evidence. Student status or an individual's founder/student profile is not an eligibility route.
+- **Employee count:** where the selected category depends on company size (PME/SME fewer than 100 employees), require official supporting evidence of the company's employee headcount, such as a recent CNSS declaration, official payroll/social-security statement or other competent-authority document. The evidence must identify or be reliably linked to the same registered legal entity. Fewer than 100 employees means 0–99 employees; exactly 100 does not qualify.
 - **One-time, lifetime offer:** each legal company/entity may use one startup/SME discount once in its lifetime, on its first eligible paid subscription purchase only. The discount is not renewed, does not recur on monthly/annual renewals, and cannot be claimed again on a later plan change, new subscription, workspace, account or payment. Store a durable redemption record keyed to the verified legal entity identifier (and country); prevent duplicate redemption across accounts/workspaces.
 - No periodic revalidation is required because the discount is not recurring. Evidence is reviewed once before the first discounted checkout. If the initial subscription purchase is cancelled or payment fails before successful fulfilment, no redemption is consumed; once the discounted purchase is successfully paid/fulfilled, the lifetime redemption is consumed.
-- **Tunisian startup (20%) accepted evidence:** a valid official Startup Label is the preferred proof. Also accept, subject to manual review, official evidence of admission/recognition by a government-backed startup programme, incubator or accelerator, or a documented student-founder pathway. For the student-founder pathway, require proof of current student status (official university enrolment/student certificate), proof the applicant is a founder/co-founder (company registry/incorporation document or equivalent official record), and evidence of the venture/startup activity (e.g. incubator admission, registered business/association where legally applicable, or a documented business/project dossier). Student status alone is not sufficient; manual approval is required where the official Startup Label is absent.
-- **Startup outside Tunisia (15%) accepted evidence:** a current official startup certificate/label or equivalent government recognition from the company's country; alternatively, official admission to a recognised incubator/accelerator or public startup programme plus company registration/founder evidence, subject to manual approval. Evidence must identify the company and its country of establishment.
-- **PME/SME under 100 employees (10%) accepted evidence:** an official, recent employee-headcount declaration or equivalent authority-issued record (for example, a social-security/payroll declaration, tax or labour authority certificate, or an official SME classification certificate) showing fewer than 100 employees. For Tunisia, accept the relevant CNSS/official administration evidence. Documents should generally be dated within the preceding 90 days at application time; exceptions require manual approval.
+- **Tunisian startup (20%) accepted evidence:** official company registration evidence (RNE extract / registre de commerce) plus a valid official Startup Label or equivalent official company-level startup recognition. The startup classification must belong to the registered legal entity. Student certificates, student-founder status and personal founder declarations are not accepted as substitutes for company-level startup proof.
+- **Startup outside Tunisia (15%) accepted evidence:** official company registration/incorporation evidence plus a current official startup certificate/label or equivalent company-level government recognition from the company's country. Evidence must identify the legal entity and its country of establishment. Personal student/founder status is not an eligibility route.
+- **PME/SME under 100 employees (10%) accepted evidence:** official company registration evidence plus an official, recent employee-headcount declaration or equivalent authority-issued record (for example, a CNSS/social-security declaration, payroll statement, tax or labour authority certificate, or official SME classification certificate) showing fewer than 100 employees. For Tunisia, the registration evidence must identify the company in the RNE / registre de commerce, and headcount must be supported by CNSS or another competent official administration. Documents should generally be dated within the preceding 90 days at application time; exceptions require manual approval.
+- **Dedicated HR/company verification workflow:** during company onboarding or before the first discounted checkout, collect the legal company name, country, registration identifier, registered address and authorised representative details; request the evidence applicable to the claimed category (company registration, startup recognition and/or employee headcount). Show verification status to the company owner and provide secure resubmission when evidence is incomplete or rejected. Keep this flow separate from Job Seeker onboarding and candidate profile data.
 - **Manual review and privacy:** provide a secure admin review queue with approve/reject/request-more-information outcomes, reviewer identity, timestamp, reason and evidence references. Restrict access to uploaded proof to authorised reviewers, encrypt it at rest, avoid exposing document contents in logs, and apply a defined retention/deletion schedule after the decision and any legally required retention period. Do not retain more personal data than necessary.
 - The discount applies to the subscription list price for the selected billing interval. Annual discounts are applied to the annual list price, not calculated by multiplying a discounted monthly amount in a way that changes the approved annual price basis.
 - Show the list price, discount category, percentage, discount amount and final subscription price clearly in the quote and checkout summary.
@@ -131,11 +137,12 @@ Important gaps to close:
 7. The existing provider adapters do not yet provide a verified production checkout path for recruiter subscriptions or credit packs.
 8. Mode-specific Free trial accounting and the safe migration from the previous Job Seeker Free policy need to be implemented and tested.
 
-Do not replace or reuse candidate quota tables for recruiter billing.
+Do not replace or reuse Job Seeker quota tables for HR/company billing. HR/company must have its own product context, company onboarding, workspace, billing portal, verification workflow, subscription lifecycle and entitlements. Shared low-level infrastructure (for example, payment orchestration or authentication) may be reused only behind explicit product-specific services and authorization boundaries; do not share candidate-facing business flows or expose candidate workspace concepts inside the HR/company experience.
 
 ## 3. Target architecture and business rules
 
-### Tenant and seat model
+### HR/company tenant, onboarding and seat model
+- HR/company onboarding creates or joins a company tenant based on verified company identity; it is not a candidate-workspace selection flow.
 - One company subscription owns exactly one company tenant/workspace.
 - A workspace owner is included in the seat count.
 - Active members and unexpired pending invitations consume seats.
@@ -252,7 +259,7 @@ Provider webhooks remain under the shared provider-specific webhook route, dispa
 - Candidate Pro/Gold regression tests prove no price/quota change.
 - Free lifetime trial counts (3 Analysis + 1 Consulting), mode isolation, idempotent bootstrap and safe legacy-account migration.
 - Free trial reservation/commit/release, failed run and concurrency tests.
-- Free lifetime entitlement cannot reset through account type switching, workspace recreation, invitation resend or repeated bootstrap.
+- HR/company trial and company entitlements cannot reset through company workspace recreation, invitation resend or repeated bootstrap. Any cross-product account switching must preserve separate product entitlements and must never make candidate-workspace concepts part of the HR/company workflow.
 - Free one-seat enforcement and concurrent invitation tests.
 - Multi-tenant selection and cross-tenant authorization tests.
 - Included-first and purchased-lot allocation tests.
