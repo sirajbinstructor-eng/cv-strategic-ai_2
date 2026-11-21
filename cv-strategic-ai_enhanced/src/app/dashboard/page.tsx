@@ -5,20 +5,22 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ adminPreview?: string }> }) {
   const session = await getCurrentSession();
   if (!session?.user?.id) redirect("/");
+  const params = await searchParams;
 
-  // A regular HR/company account belongs directly in the company product.
-  // Only administrators retain the cross-product workspace selector.
   const profile = await pool.query(
     'SELECT account_type,is_admin FROM "user" WHERE id=$1',
     [session.user.id]
   );
   const account = profile.rows[0];
-  if (account?.account_type === "recruiter" && account.is_admin !== true) {
-    redirect("/recruiter");
-  }
+  const isAdmin = account?.is_admin === true;
+
+  // Administrators land on the admin console. The explicit preview flag is
+  // issued only by the authenticated admin journey launcher.
+  if (isAdmin && params.adminPreview !== "job-seeker") redirect("/admin");
+  if (account?.account_type === "recruiter" && !isAdmin) redirect("/recruiter");
 
   return <DashboardShell />;
 }
