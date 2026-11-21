@@ -1,6 +1,6 @@
 # HR / Company Billing — Approved Commercial Baseline and Implementation Plan
 
-**Status:** Commercial subscription prices approved by product owner. Implementation planning only; no production billing behavior is enabled by this document.
+**Status:** Commercial subscription prices approved by product owner. Free-tier trial policy additionally approved on 2026-11-21. Implementation planning only; no production billing behavior is enabled by this document.
 
 **Repository baseline:** `main` at `fb99d345e87af7bda5177e029af9088647f1d253` (2026-11-20).
 
@@ -12,10 +12,22 @@ Company billing is a separate product from Job Seeker Pro / Gold. Company subscr
 
 | Plan | USD / month | EUR / month | TND / month | Included credits / month | Seats |
 |---|---:|---:|---:|---:|---:|
-| Free | $0 | €0 | 0 TND | 10 lifetime | 1 |
+| Free | $0 | €0 | 0 TND | 3 Analysis trials + 1 Consulting trial (lifetime) | 1 |
 | Starter | $49 | €46 | 165 TND | 40 | 2 |
 | Growth | $299 | €279 | 999 TND | 250 | 5 |
 | Business | $899 | €839 | 2,999 TND | 800 | 15 |
+
+**Free-tier parity:** The Free offer for HR/company users must match the approved Job Seeker Free trial experience:
+- 3 lifetime trials in **Analysis** mode.
+- 1 lifetime trial in **Consulting** mode.
+- These are mode-specific trials, not a pool of 4 interchangeable credits.
+- No recurring monthly or annual credit grant on Free.
+- The Consulting trial is a one-time entitlement, not an ongoing Consulting subscription.
+- The Free workspace has one seat. The trial allowance is associated with the Free workspace owner's account/workspace entitlement and must not multiply when additional workspaces are created, invitations are resent, or users switch between HR and Job Seeker workspaces.
+- Trial consumption must be tracked separately by mode and enforced server-side. A failed or cancelled run must not consume a trial; successful completion consumes exactly one trial for the selected mode.
+- Once either allowance is exhausted, the relevant mode requires an eligible paid entitlement or admin/unrestricted access. Do not silently convert one mode's remaining trials into the other mode.
+
+The same 3 Analysis + 1 Consulting Free trial policy is approved for Job Seeker accounts as well. Implementation must reconcile this with the existing Free Job Seeker policy (which previously included 3 Analysis trials and 1 CV generation, while Consulting mode was locked on Free). Do not count the old CV-generation allowance as a Consulting trial or silently remove existing user entitlements; define and test a safe migration/compatibility policy before changing existing accounts.
 
 ### Annual subscriptions
 
@@ -35,7 +47,9 @@ Prices are fixed per currency. Do not dynamically convert prices at checkout.
 |---|---|---|---|---|
 | Company tenants per subscription | 1 | 1 | 1 | 1 |
 | Seats (including owner) | 1 | 2 | 5 | 15 |
-| Single CV/job evaluation | Yes | Yes | Yes | Yes |
+| Analysis mode | 3 lifetime trials | Included quota | Included quota | Included quota |
+| Consulting mode | 1 lifetime trial | Included quota | Included quota | Included quota |
+| Single CV/job evaluation | Yes, within trials | Yes | Yes | Yes |
 | Multi-CV or multi-job batch | No | Yes | Yes | Yes |
 | Candidate/job ranking | Basic | Standard | Advanced | Advanced |
 | Shared workspace | No | Basic | Yes | Yes |
@@ -45,10 +59,12 @@ Prices are fixed per currency. Do not dynamically convert prices at checkout.
 
 A seat is one individual account with active membership in the company workspace. The company owner consumes one seat. Pending invitations also reserve a seat so simultaneous invitations cannot exceed the plan limit.
 
-One evaluation credit means one distinct CV evaluated against one job description. The existing two mutually exclusive workflows remain unchanged:
+One paid evaluation credit means one distinct CV evaluated against one job description. The existing two mutually exclusive workflows remain unchanged:
 - One job description against 1–10 CVs.
 - One CV against 1–5 job descriptions.
 - No cross-product matrix (for example, 10 CVs × 5 jobs).
+
+Paid plan credits and Free mode-specific trials are separate entitlement types and must not be mixed into one fungible balance.
 
 ### Optional credit packs
 
@@ -86,6 +102,7 @@ Important gaps to close:
 5. Current workspace access helper silently chooses the first active workspace; this must be replaced before supporting members of multiple tenants.
 6. Aggregate purchased-credit balance alone cannot correctly expire individual packs after 12 months. Add auditable credit lots and integrate them with the reservation engine.
 7. The existing provider adapters do not yet provide a verified production checkout path for recruiter subscriptions or credit packs.
+8. Mode-specific Free trial accounting and the safe migration from the previous Job Seeker Free policy need to be implemented and tested.
 
 Do not replace or reuse candidate quota tables for recruiter billing.
 
@@ -100,14 +117,17 @@ Do not replace or reuse candidate quota tables for recruiter billing.
 - A person may be invited to more than one company. Workspace context must be explicit and membership-checked on every server request; never trust a client-supplied workspace ID without verifying membership.
 - Admin/unrestricted testing bypass must not grant ordinary users additional seats or expose other tenants' data.
 
-### Subscription and credit rules
-- Free is a lifetime workspace entitlement: 10 credits, 1 seat, no premium batch capability. Grant once per workspace using an immutable idempotency key; re-provisioning or retries must not reset the allowance.
+### Subscription, trial and credit rules
+- Free mode-specific trials are lifetime allowances: 3 Analysis and 1 Consulting. Track each mode independently with immutable idempotency keys. Do not grant a generic 10-credit Free balance.
+- Trial entitlements must not reset on workspace recreation, invitation resend, account type/workspace switching or repeated bootstrap. Apply the approved migration policy to existing Job Seeker accounts without granting duplicate trials or removing previously paid entitlements.
+- A successful completed run consumes one trial of the selected mode. Failed/cancelled runs release reservations and do not consume trials.
 - Starter/Growth/Business monthly credits renew per paid monthly period.
 - Annual credits are granted upfront (480 / 3,000 / 9,600) and expire at the end of the paid annual term.
-- Included credits expire at the end of their subscription period and do not roll over.
-- Purchased credits are tracked as separate lots, expire 12 months after payment, survive subscription cancellation and are consumed only after included credits.
-- Reserve and release logic must preserve the source lot and its expiry; a failed evaluation must not revive already-expired credits.
-- One evaluation consumes exactly one credit only after successful pair completion. Failed pairs release the exact reserved lot.
+- Included paid credits expire at the end of their subscription period and do not roll over.
+- Purchased credits are tracked as separate lots, expire 12 months after payment, survive subscription cancellation and are consumed only after included paid credits.
+- Free mode-specific trials are not convertible to paid credits and paid credit packs do not replenish Free trials.
+- Reserve and release logic must preserve the source lot/trial mode and expiry; a failed evaluation must not revive already-expired credits.
+- One paid evaluation consumes exactly one credit only after successful pair completion. Failed pairs release the exact reserved lot.
 - Subscription changes take effect at the next renewal in the initial release. No prorated mid-cycle plan changes until a separate, explicit proration policy is approved.
 - Cancellation takes effect at the end of the paid period. Access remains active through that period.
 - Refunds, disputes and chargebacks create auditable ledger reversals and suspend/revoke the associated entitlement according to verified provider events and policy.
@@ -125,10 +145,11 @@ Do not replace or reuse candidate quota tables for recruiter billing.
 - Add unit-tested fixed USD/EUR/TND monthly and annual prices, quotas, seat limits and feature flags.
 - Add recruiter pricing page and workspace plan comparison with monthly/annual and currency selection.
 - Display current plan, renewal/expiry date, seats used/available, included balance, purchased balance and credit expiry.
+- Display the Free plan's 3 Analysis + 1 Consulting lifetime trials separately, including remaining trials for each mode.
 - Keep all checkout actions visibly unavailable until a matching provider is genuinely ready.
 - Add admin read-only view of recruiter plans, subscriptions, credit balances and ledger.
 
-**Acceptance:** candidate pricing and entitlements are unchanged; every recruiter price/credit/seat figure matches this document; no payment is created.
+**Acceptance:** candidate paid pricing and entitlements are unchanged; Free trial policy is consistent across Job Seeker and HR/company accounts after the approved safe migration; every recruiter paid price/credit/seat figure matches this document; no payment is created.
 
 ### Phase B — Tenant membership and seat enforcement
 - Add secure workspace selection for users belonging to multiple tenants.
@@ -141,14 +162,15 @@ Do not replace or reuse candidate quota tables for recruiter billing.
 **Acceptance:** one workspace cannot read or modify another workspace's CVs, jobs, evaluations, credits, invoices or members; seat limit cannot be exceeded under concurrent invites.
 
 ### Phase C — Credit accounting and lifecycle
-- Add credit-lot storage for included monthly/annual grants, Free lifetime grants and purchased packs, including source, expiry, remaining balance and immutable idempotency reference.
-- Migrate/bridge the existing aggregate balance safely; reconcile lot totals against `recruiter_credit_accounts`.
-- Update batch reservation, completion and failure release to reserve from included lots first, then purchased lots, preserving expiry.
+- Add credit-lot storage for included monthly/annual grants and purchased packs, including source, expiry, remaining balance and immutable idempotency reference.
+- Implement separate mode-specific Free trial counters/reservations for Analysis and Consulting, preserving their lifetime nature and existing-account migration rules.
+- Migrate/bridge the existing aggregate paid balance safely; reconcile lot totals against `recruiter_credit_accounts`.
+- Update batch reservation, completion and failure release to reserve from included paid lots first, then purchased lots, preserving expiry.
 - Implement monthly renewal and annual upfront grant jobs/verified webhook fulfilment.
 - Implement pack fulfilment, expiry processing and refund/dispute reversals.
 - Add admin adjustments with reason, actor and idempotency audit trail.
 
-**Acceptance:** concurrent evaluations cannot overspend; retries never double grant; expired lots cannot be consumed or revived; failed pairs release only their original lot.
+**Acceptance:** concurrent evaluations cannot overspend; retries never double grant; expired lots cannot be consumed or revived; failed pairs release only their original lot; Free trials cannot be double-spent or reset.
 
 ### Phase D — Recruiter checkout and payment orchestration
 - Add authenticated recruiter quote and checkout APIs using server-side catalogue lookups.
@@ -170,7 +192,7 @@ Do not replace or reuse candidate quota tables for recruiter billing.
 
 ### Phase E — Production readiness and rollout
 - Run migrations/bootstrap against a staging database first; no destructive schema changes or data resets.
-- Run unit, integration, API and end-to-end tests for all plans, currencies, intervals, seats, lots, renewal, cancellation, refund, dispute and concurrent evaluation cases.
+- Run unit, integration, API and end-to-end tests for all plans, currencies, intervals, seats, lots, trials, renewal, cancellation, refund, dispute and concurrent evaluation cases.
 - Verify privacy notice, lawful basis, processor agreements, retention and cross-border data-transfer controls for recruiter CV processing.
 - Verify merchant eligibility, fee schedule, settlement currency, bank payout route, refund/dispute process and accounting reconciliation.
 - Enable one provider at a time after controlled merchant testing; monitor payment/ledger reconciliation before broader release.
@@ -201,8 +223,10 @@ Provider webhooks remain under the shared provider-specific webhook route, dispa
 - Catalogue price/interval/currency and integer-minor-unit tests.
 - Exact annual price = ten monthly payments; annual credit totals correct.
 - Candidate Pro/Gold regression tests prove no price/quota change.
-- Free lifetime grant idempotency and one-seat enforcement.
-- Concurrent invitations cannot exceed seat limits.
+- Free lifetime trial counts (3 Analysis + 1 Consulting), mode isolation, idempotent bootstrap and safe legacy-account migration.
+- Free trial reservation/commit/release, failed run and concurrency tests.
+- Free lifetime entitlement cannot reset through account type switching, workspace recreation, invitation resend or repeated bootstrap.
+- Free one-seat enforcement and concurrent invitation tests.
 - Multi-tenant selection and cross-tenant authorization tests.
 - Included-first and purchased-lot allocation tests.
 - Lot expiry, annual expiry, monthly renewal, cancellation and downgrade tests.
@@ -215,19 +239,20 @@ Existing project validation commands are `npm run typecheck`, `npm test`, `npm r
 
 ## 7. Explicit non-goals and release safeguards
 
-- No modification to candidate Pro/Gold pricing, discounts, quotas or checkout behavior in the recruiter catalogue work.
+- No modification to candidate Pro/Gold pricing or paid quotas in the recruiter catalogue.
+- Implement the approved Free mode trial parity for both products only with an explicit compatibility migration; preserve existing paid entitlements and never duplicate/reset prior trial usage.
 - No automatic credit-pack replenishment.
 - No automatic recurring billing claim for Flouci/ClicToPay/D17/iPay until their documented contracts and merchant accounts support it.
 - No invented provider endpoints, secrets, settlement routes or merchant credentials.
 - No direct card-data handling.
-- No activation of provider flags, Render environment changes, deployment, database mutation or production payment testing as part of the planning phase.
+- No activation of provider flags, Render environment changes, deployment, database mutation or production payment testing as part of the planning PR.
 - No merge without the product owner's explicit approval.
 
 ## 8. Implementation order
 
-1. Phase A: recruiter catalogue, pricing page and admin visibility.
+1. Phase A: recruiter catalogue, pricing page and admin visibility, including the shared Free mode-specific trial policy.
 2. Phase B: tenant context, invitations and seat enforcement.
-3. Phase C: credit lots and lifecycle.
+3. Phase C: paid credit lots and Free trial lifecycle/migration.
 4. Phase D: recruiter checkout/fulfilment, starting with the first merchant-approved provider whose contract supports the required transaction type.
 5. Phase E: staging verification, merchant settlement checks and controlled production rollout.
 
