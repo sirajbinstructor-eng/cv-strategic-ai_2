@@ -41,6 +41,27 @@ Annual price is exactly ten times the monthly price in each currency (two months
 
 Prices are fixed per currency. Do not dynamically convert prices at checkout.
 
+### Approved startup and SME discounts
+
+The following discounts apply to paid HR/company subscription plans (Starter, Growth and Business), for both monthly and annual billing, against the corresponding published list price:
+
+| Eligible company category | Discount |
+|---|---:|
+| Tunisian startup | 20% |
+| Startup outside Tunisia | 15% |
+| PME / SME with fewer than 100 employees | 10% |
+
+Discount rules:
+- Discounts are **mutually exclusive**. A company may receive only one of these discounts on a subscription; percentages must never be added together or compounded.
+- If a company qualifies for more than one category, apply only the single highest eligible discount: Tunisian startup 20%, other-country startup 15%, or SME 10%.
+- A company must satisfy and verify the selected category before the discounted quote/checkout is issued. The verification method, accepted evidence, validity period and re-verification process must be defined in the implementation policy; do not grant a discount based only on a user-selected checkbox or unverified claim.
+- The discount applies to the subscription list price for the selected billing interval. Annual discounts are applied to the annual list price, not calculated by multiplying a discounted monthly amount in a way that changes the approved annual price basis.
+- Show the list price, discount category, percentage, discount amount and final subscription price clearly in the quote and checkout summary.
+- Do not stack these discounts with another promotional, referral, coupon or negotiated discount. If another promotion is introduced later, the pricing policy must explicitly define a single winning offer; no stacking by default.
+- These discounts do not apply to Job Seeker Pro/Gold or the proposed one-time credit packs unless separately approved.
+- Store the applied discount category, verification evidence reference, percentage, list amount, discount amount, final amount, currency and validity dates in an auditable record. Revalidate eligibility at renewal; do not silently preserve an expired qualification.
+
+
 ### Included capabilities
 
 | Capability | Free | Starter | Growth | Business |
