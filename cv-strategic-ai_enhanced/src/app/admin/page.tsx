@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ensureAuthSchema } from "@/lib/db/ensure-auth-schema";
 import { AdminAnalyticsRepository } from "@/lib/admin/analytics-repository";
 import { AdminAnalytics } from "@/components/admin/admin-analytics";
+import { AdminJourneyLauncher } from "@/components/admin/admin-journey-launcher";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,12 @@ export default async function AdminPage() {
     <section className="admin-dashboard-welcome">
       <div><p className="eyebrow">CV STRATEGIST AI / INTELLIGENCE</p><h1>Admin overview<span>.</span></h1><p className="muted">A real-time view of platform growth, product usage and operations.</p></div>
       <div className="admin-dashboard-actions"><span className="admin-live-indicator"><i/> LIVE DATABASE</span><Link className="admin-action-button" href="/admin/users">Manage users <span>↗</span></Link></div>
+    </section>
+    <section className="workspace-card admin-journey-prompt" id="admin-journeys">
+      <p className="eyebrow">PRODUCT EXPERIENCE PREVIEW</p>
+      <h2>Explore the customer journeys</h2>
+      <p className="muted">Your administrator access remains active. Open either product journey to inspect the experience exactly as a Job Seeker or a recruiter would use it.</p>
+      <AdminJourneyLauncher />
     </section>
     <AdminAnalytics data={analytics}/>
     <section className="admin-shortcut-grid">

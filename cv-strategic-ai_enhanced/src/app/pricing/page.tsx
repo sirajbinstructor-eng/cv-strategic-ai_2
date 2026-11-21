@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { PLAN_CATALOG, PLAN_QUOTAS, PLAN_DISPLAY_NAMES, formatPrice, type BillingCurrency, type BillingPlan, type BillingInterval } from "@/lib/billing/catalog";
 import { CandidateCheckoutActions } from "@/components/pricing/candidate-checkout";
+import { redirect } from "next/navigation";
+import { getCurrentSession } from "@/lib/server-session";
+import { pool } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +99,15 @@ function PricingComparison({ plan }: { plan: BillingPlan }) {
   );
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const session = await getCurrentSession();
+  if (session?.user?.id) {
+    const profile = await pool.query('SELECT account_type,is_admin FROM "user" WHERE id=$1',[session.user.id]);
+    if (profile.rows[0]?.account_type === "recruiter" && profile.rows[0]?.is_admin !== true) {
+      redirect("/recruiter");
+    }
+  }
+
   return (
     <main className="dashboard-page pricing-page">
       <header className="dashboard-header">

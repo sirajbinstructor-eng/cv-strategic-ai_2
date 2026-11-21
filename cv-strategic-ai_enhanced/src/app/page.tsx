@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await getCurrentSession();
-  if (session?.user) redirect("/dashboard");
+  if (session?.user) redirect((session.user as typeof session.user & { isAdmin?: boolean }).isAdmin ? "/admin" : "/dashboard");
   const providers = {
     google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     microsoft: false

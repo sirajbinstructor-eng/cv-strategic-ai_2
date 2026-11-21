@@ -23,7 +23,6 @@ type AccountPayload = {
 export function DashboardShell() {
   const router = useRouter();
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [adminWorkspaceSelected, setAdminWorkspaceSelected] = useState(false);
   const accountQuery = useQuery({
     queryKey: ["account"],
     queryFn: async () => {
@@ -46,9 +45,7 @@ export function DashboardShell() {
   if ((!accountQuery.data && accountQuery.isError) || !accountQuery.data?.authenticated) return <main className="dashboard-loading"><p>We couldn't load your account. Please sign in again.</p><Link className="button-primary" href="/">Return to sign in</Link></main>;
 
   const { user, entitlements } = accountQuery.data;
-  const mustChooseWorkspace = entitlements.isAdmin
-    ? !adminWorkspaceSelected
-    : !user.accountType;
+  const mustChooseWorkspace = !entitlements.isAdmin && !user.accountType;
 
   if (mustChooseWorkspace) {
     return (
@@ -62,7 +59,6 @@ export function DashboardShell() {
             isAdmin={entitlements.isAdmin}
             initialAccountType={user.accountType}
             onComplete={() => {
-              setAdminWorkspaceSelected(true);
               router.refresh();
             }}
           />
@@ -77,9 +73,9 @@ export function DashboardShell() {
         <Link className="brand" href="/dashboard"><span className="brand-mark">CV</span><span><strong>CV Strategist</strong><small>Intelligent career positioning</small></span></Link>
         <div className="header-actions">
           <span className="user-chip">{user.name || user.email}</span>
-          {entitlements.isAdmin && <button className="button-quiet" onClick={() => setAdminWorkspaceSelected(false)}>Switch workspace</button>}
+          {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
           {!entitlements.isAdmin && user.accountType === "job_seeker" && <Link href="/pricing" className="header-link">Plans & pricing</Link>}
-          <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>
+          {user.accountType === "job_seeker" && <Link href="/dashboard/discounts" className="header-link">Discount eligibility</Link>}
           <Link href="/dashboard/settings" className="header-link">Account settings</Link>
           {entitlements.isAdmin && <Link href="/admin" className="header-link">Admin dashboard</Link>}
           <button className="button-quiet" onClick={signOut}>Sign out</button>
@@ -87,13 +83,13 @@ export function DashboardShell() {
       </header>
       <div className="dashboard-main">
         <section className="dashboard-welcome">
-          <div><p className="eyebrow">{user.accountType === "recruiter" ? "RECRUITER WORKSPACE" : "JOB SEEKER DASHBOARD"}</p><h1>Welcome{user.name ? `, ${user.name.split(" ")[0]}` : " back"}.</h1><p className="muted">Your CV strategy workspace and account overview.</p></div>
+          <div><p className="eyebrow">{user.accountType === "recruiter" ? "RECRUITER WORKSPACE" : "JOB SEEKER DASHBOARD"}</p><h1>Welcome{user.name ? `, ${user.name.split(" ")[0]}` : " back"}.</h1><p className="muted">{user.accountType === "recruiter" ? "Your company operations, team and evaluation workspace." : "Your CV strategy workspace and account overview."}</p></div>
           <div className="dashboard-date">CV STRATEGIST AI <span>YOUR CAREER, BETTER POSITIONED</span></div>
         </section>
         {user.accountType === "recruiter" ? (
           <section className="workspace-card">
             <p className="eyebrow">COMPANY WORKSPACE</p><h2>Your recruiter workspace is ready.</h2>
-            <p className="muted">Your company workspace is separate from candidate subscriptions. Recruiter evaluation credits, team seats and batch matching are managed separately.</p>
+            <p className="muted">Manage your organisation, team seats, evaluation credits and hiring workflows in one dedicated company environment.</p>
             <Link className="button-primary" href="/recruiter">Open recruiter workspace →</Link>
           </section>
         ) : (
@@ -108,7 +104,7 @@ export function DashboardShell() {
           </>
         )}
         {showUpgrade && <div className="modal-backdrop" role="presentation" onClick={() => setShowUpgrade(false)}><section className="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onClick={event => event.stopPropagation()}><button className="modal-close" type="button" onClick={() => setShowUpgrade(false)} aria-label="Close">×</button><p className="eyebrow">UNLOCK YOUR NEXT STEP</p><h2 id="upgrade-title">Upgrade your CV strategy.</h2><p>Compare the Pro and Gold plans and choose the level that fits your goals. Online subscription checkout is not available yet; we will enable purchases once payment-provider onboarding and verification are complete. Your current access and trial balance are not affected.</p><Link className="button-primary full-width" href="/pricing">View plans and pricing</Link><button className="button-quiet full-width" type="button" onClick={() => setShowUpgrade(false)}>Close</button></section></div>}
-        <footer className="dashboard-footer"><span>CV Strategist AI</span><span>Evidence-based. ATS-friendly. Candidate-controlled.</span></footer>
+        <footer className="dashboard-footer"><span>CV Strategist AI</span><span>{user.accountType === "recruiter" ? "Company-first. Secure. Evidence-based." : "Evidence-based. ATS-friendly. Candidate-controlled."}</span></footer>
       </div>
     </main>
   );
