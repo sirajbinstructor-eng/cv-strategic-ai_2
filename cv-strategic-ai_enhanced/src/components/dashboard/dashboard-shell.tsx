@@ -59,7 +59,6 @@ export function DashboardShell() {
             isAdmin={entitlements.isAdmin}
             initialAccountType={user.accountType}
             onComplete={() => {
-              setAdminWorkspaceSelected(true);
               router.refresh();
             }}
           />
