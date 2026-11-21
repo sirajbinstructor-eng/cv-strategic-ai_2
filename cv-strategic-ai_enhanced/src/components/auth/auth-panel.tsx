@@ -371,27 +371,12 @@ export function AuthPanel({
               Continue with Google{!providers.google ? " · setup required" : ""}
             </button>
 
-            <button
-              className="social-button"
-              type="button"
-              aria-disabled={!providers.microsoft}
-              title={providers.microsoft ? "Continue with Microsoft" : "Microsoft OAuth credentials are not configured in Render"}
-              disabled={pending}
-              onClick={() => socialSignIn("microsoft")}
-            >
-              <span className="microsoft-mark">
-                <i />
-                <i />
-                <i />
-                <i />
-              </span>
-              Continue with Microsoft{!providers.microsoft ? " · setup required" : ""}
-            </button>
+
           </div>
 
-          {(!providers.google || !providers.microsoft) && (
+          {!providers.google && (
             <p className="provider-note">
-              Select a provider marked “setup required” for the exact Render variable names. You can also inspect the safe server diagnostic at <a href="/api/auth/status" target="_blank" rel="noreferrer">OAuth configuration status</a>.
+              Google sign-in is not configured yet. Add its OAuth credentials in Render or use email sign-in. You can inspect the safe server diagnostic at <a href="/api/auth/status" target="_blank" rel="noreferrer">OAuth configuration status</a>.
             </p>
           )}
 

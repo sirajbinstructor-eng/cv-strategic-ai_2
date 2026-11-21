@@ -10,7 +10,7 @@ export default async function HomePage() {
   if (session?.user) redirect("/dashboard");
   const providers = {
     google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-    microsoft: Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET)
+    microsoft: false
   };
   return (
     <main className="marketing-page">
