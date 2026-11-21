@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 export default async function SignInPage() {
   const session = await getCurrentSession();
   if (session?.user) redirect("/dashboard");
-  return <main className="marketing-page"><div className="marketing-content"><div className="auth-wrap"><AuthPanel initialMode="signin" providers={{ google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET), microsoft: Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) }} /></div></div></main>;
+  return <main className="marketing-page"><div className="marketing-content"><div className="auth-wrap"><AuthPanel initialMode="signin" providers={{ google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET), microsoft: false }} /></div></div></main>;
 }
